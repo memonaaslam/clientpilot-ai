@@ -19,7 +19,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           <Link href="/dashboard/tasks">Tasks</Link>
           <Link href="/dashboard/proposals">Proposals</Link>
           <Link href="/dashboard/settings">Settings</Link>
-          <Link href="/#pricing">Subscription</Link>
+          <Link href="/dashboard/subscription">Subscription</Link>
         </nav>
 
         <div className="sidebar-bottom">

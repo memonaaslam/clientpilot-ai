@@ -691,3 +691,28 @@ h1 { font-size: clamp(42px, 6vw, 74px); line-height: .94; letter-spacing: -0.07e
   color: var(--muted);
   font-size: 12px;
 }
+
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.active-plan {
+  border-color: rgba(230,195,106,.55);
+  box-shadow: 0 18px 70px rgba(230,195,106,.12);
+}
+
+.plan-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.proposal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
