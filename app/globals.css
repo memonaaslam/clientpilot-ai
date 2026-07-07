@@ -1656,3 +1656,58 @@ td .muted {
   color: var(--brand) !important;
 }
 
+
+/* Fix upload form dropdown/client name visibility */
+select,
+select.input,
+.form select,
+.card select,
+.upload-card select,
+.upload-form select {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid var(--border-soft) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+select option,
+select.input option,
+.form select option,
+.card select option {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+input[type="file"],
+.form input[type="file"],
+.card input[type="file"] {
+  color: #1f2937 !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border-soft) !important;
+}
+
+input[type="file"]::file-selector-button {
+  background: var(--brand) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  margin-right: 12px !important;
+  cursor: pointer !important;
+}
+
+.form label,
+.card label,
+.upload-card label,
+.upload-form label {
+  color: #1f2937 !important;
+  opacity: 1 !important;
+}
+
+.form *,
+.upload-card *,
+.upload-form * {
+  opacity: 1;
+}
+
