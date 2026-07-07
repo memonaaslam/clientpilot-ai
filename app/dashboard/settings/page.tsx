@@ -80,14 +80,14 @@ export default async function SettingsPage() {
             <input
               className="input"
               name="business_name"
-              placeholder="Business name, e.g. Vogue Interiors"
+              placeholder="Business name, e.g. Your Company Name"
               defaultValue={settings?.business_name || ""}
             />
 
             <input
               className="input"
               name="logo_text"
-              placeholder="Logo text, e.g. VOGUE INTERIORS"
+              placeholder="Logo text, e.g. YOUR COMPANY"
               defaultValue={settings?.logo_text || ""}
             />
 
@@ -102,14 +102,14 @@ export default async function SettingsPage() {
             <textarea
               className="textarea"
               name="whatsapp_signature"
-              placeholder="WhatsApp signature, e.g. Regards, Vogue Interiors Team"
+              placeholder="WhatsApp signature, e.g. Regards, Your Team"
               defaultValue={settings?.whatsapp_signature || ""}
             />
 
             <textarea
               className="textarea"
               name="email_signature"
-              placeholder="Email signature, e.g. Best regards, Vogue Interiors Team"
+              placeholder="Email signature, e.g. Best regards, Your Team"
               defaultValue={settings?.email_signature || ""}
             />
 
