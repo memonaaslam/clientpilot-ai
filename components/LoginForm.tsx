@@ -4,6 +4,18 @@ import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function getErrorMessage(error: unknown) {
+  if (!error) return "Something went wrong. Please try again.";
+  if (typeof error === "string") return error;
+
+  if (typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (message) return String(message);
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
 export function LoginForm() {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
@@ -52,7 +64,7 @@ export function LoginForm() {
         });
 
         if (error) {
-          setError(error.message);
+          setError(getErrorMessage(error));
           setLoading(false);
           return;
         }
@@ -63,7 +75,7 @@ export function LoginForm() {
           return;
         }
 
-        setMessage("Account created. Please check your email to confirm your account, then login.");
+        setMessage("Account created. You can now sign in.");
         setLoading(false);
         return;
       }
@@ -74,15 +86,15 @@ export function LoginForm() {
       });
 
       if (error) {
-        setError(error.message);
+        setError(getErrorMessage(error));
         setLoading(false);
         return;
       }
 
       router.push("/dashboard");
       router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (error) {
+      setError(getErrorMessage(error));
       setLoading(false);
     }
   }
@@ -92,25 +104,29 @@ export function LoginForm() {
     setMessage("");
     setError("");
 
-    if (!email) {
-      setError("Please enter your email first.");
-      setLoading(false);
-      return;
-    }
-
-    const origin = window.location.origin;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${origin}/auth/callback`
+    try {
+      if (!email) {
+        setError("Please enter your email first.");
+        setLoading(false);
+        return;
       }
-    });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage("Magic link sent. Please check your email.");
+      const origin = window.location.origin;
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${origin}/auth/callback`
+        }
+      });
+
+      if (error) {
+        setError(getErrorMessage(error));
+      } else {
+        setMessage("Magic link sent. Please check your email inbox or spam folder.");
+      }
+    } catch (error) {
+      setError(getErrorMessage(error));
     }
 
     setLoading(false);
@@ -121,22 +137,26 @@ export function LoginForm() {
     setMessage("");
     setError("");
 
-    if (!email) {
-      setError("Please enter your email first.");
-      setLoading(false);
-      return;
-    }
+    try {
+      if (!email) {
+        setError("Please enter your email first.");
+        setLoading(false);
+        return;
+      }
 
-    const origin = window.location.origin;
+      const origin = window.location.origin;
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/reset-password`
-    });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/reset-password`
+      });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      setMessage("Password reset link sent. Please check your email.");
+      if (error) {
+        setError(getErrorMessage(error));
+      } else {
+        setMessage("Password reset email sent. Please check your inbox or spam folder.");
+      }
+    } catch (error) {
+      setError(getErrorMessage(error));
     }
 
     setLoading(false);
@@ -196,7 +216,7 @@ export function LoginForm() {
           placeholder="Password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          required
+          required={mode === "signin" || mode === "signup"}
         />
 
         {error ? <p className="auth-error">{error}</p> : null}

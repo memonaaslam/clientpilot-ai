@@ -7,7 +7,7 @@ export default function LoginPage() {
       <Link href="/" className="logo">ClientPilot<span>AI</span></Link>
       <div className="card" style={{ maxWidth: 480, marginTop: 40 }}>
         <h1 style={{ fontSize: 42 }}>Login</h1>
-        <p className="muted">Enter your email and Supabase will send a magic login link.</p>
+        <p className="muted">Sign in with your email and password, create an account, or reset your password securely.</p>
         <LoginForm />
       </div>
     </main>
