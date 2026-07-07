@@ -1,5 +1,5 @@
 import { DashboardShell } from "@/components/DashboardShell";
-import { SmartMeetingUpload } from "@/components/SmartMeetingUpload";
+import { ReminderCenter } from "@/components/ReminderCenter";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 type ClientOption = {
@@ -9,7 +9,7 @@ type ClientOption = {
   email?: string | null;
 };
 
-export default async function UploadPage() {
+export default async function RemindersPage() {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -21,7 +21,7 @@ export default async function UploadPage() {
       <DashboardShell>
         <div className="empty-state">
           <h2>Please sign in first</h2>
-          <p className="muted">Login to process meeting notes and create follow-ups.</p>
+          <p className="muted">Login to manage your follow-up reminders.</p>
         </div>
       </DashboardShell>
     );
@@ -56,20 +56,20 @@ export default async function UploadPage() {
     <DashboardShell>
       <div className="page-hero">
         <div>
-          <span className="badge">Smart Meeting Workflow</span>
-          <h1 style={{ fontSize: 46 }}>Upload Meeting</h1>
+          <span className="badge">Follow-Up Autopilot</span>
+          <h1 style={{ fontSize: 46 }}>Reminders</h1>
           <p className="muted">
-            Paste meeting notes and create a smart summary, follow-up tasks, proposal points, and reminders.
+            Create follow-up reminders, add them to Google Calendar, and never lose a client because of missed action.
           </p>
         </div>
 
         <div className="hero-mini-card">
-          <strong>Smart</strong>
-          <span>Follow-up</span>
+          <strong>Auto</strong>
+          <span>Follow-ups</span>
         </div>
       </div>
 
-      <SmartMeetingUpload clients={clientRows} />
+      <ReminderCenter clients={clientRows} />
     </DashboardShell>
   );
 }

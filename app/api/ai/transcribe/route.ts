@@ -139,6 +139,18 @@ export async function POST(request: Request) {
       actionItems: smart.actionItems,
       followUp: smart.followUp,
       proposalPoints: smart.proposalPoints,
+      autopilot: {
+        temperature: smart.temperature,
+        score: smart.score,
+        stage: smart.stage,
+        nextBestAction: smart.nextBestAction,
+        whatsappMessage: smart.whatsappMessage,
+        emailMessage: smart.emailMessage,
+        automationPlan: smart.automationPlan,
+        missingInfo: smart.missingInfo,
+        dealSignals: smart.dealSignals,
+        riskSignals: smart.riskSignals
+      },
       aiMode: "smart-free",
       usage: limitStatus.usage + 1,
       limit: limitStatus.limit,

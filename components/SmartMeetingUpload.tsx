@@ -6,25 +6,39 @@ import Link from "next/link";
 type ClientOption = {
   id: string;
   name: string;
+  phone?: string | null;
+  email?: string | null;
 };
 
 type SmartMeetingUploadProps = {
   clients: ClientOption[];
 };
 
+function suggestedDate(daysFromNow: number, hour: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  date.setHours(hour, 0, 0, 0);
+  return date.toISOString();
+}
+
 export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
   const [title, setTitle] = useState("Client meeting");
   const [clientId, setClientId] = useState(clients[0]?.id || "");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
+  const [reminderSaving, setReminderSaving] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<any>(null);
+
+  const selectedClient = clients.find((client) => client.id === clientId);
 
   async function submitMeeting(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setLoading(true);
     setError("");
+    setMessage("");
     setResult(null);
 
     try {
@@ -54,6 +68,47 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
     }
   }
 
+  async function createSuggestedReminder(
+    key: string,
+    reminderTitle: string,
+    type: string,
+    dueAt: string,
+    priority: string
+  ) {
+    setReminderSaving(key);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/reminders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          client_id: selectedClient?.id || null,
+          client_name: selectedClient?.name || null,
+          client_phone: selectedClient?.phone || null,
+          title: reminderTitle,
+          reminder_type: type,
+          priority,
+          due_at: dueAt,
+          notes: `Created from meeting: ${title}`
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Unable to create reminder.");
+        return;
+      }
+
+      setMessage("Reminder added successfully.");
+    } finally {
+      setReminderSaving("");
+    }
+  }
+
   return (
     <div className="smart-upload-layout">
       <section className="smart-upload-card">
@@ -61,8 +116,8 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
           <span className="badge">Free Smart Mode</span>
           <h2>Process meeting notes</h2>
           <p>
-            Paste meeting notes and ClientPilot AI will create a smart summary, action list,
-            follow-up direction, and proposal points without using paid AI APIs.
+            Paste meeting notes and ClientPilot will create a smart summary, action list,
+            proposal points, and follow-up reminders.
           </p>
         </div>
 
@@ -102,7 +157,7 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              placeholder="Example: Client wants social media management. Budget is around $500/month. Needs proposal today. Follow up tomorrow on WhatsApp..."
+              placeholder="Example: Client wants social media management. Budget is $500 per month. Needs proposal today. Follow up tomorrow on WhatsApp."
               required
             />
           </label>
@@ -125,16 +180,12 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
 
         <div className="smart-preview-step">
           <strong>02</strong>
-          <span>Action items and next steps</span>
+          <span>Action items and proposal points</span>
         </div>
 
         <div className="smart-preview-step">
           <strong>03</strong>
-          <span>Proposal points for client follow-up</span>
-        </div>
-
-        <div className="smart-preview-note">
-          Audio transcription is AI-ready for later. For now, this mode keeps your running cost free.
+          <span>Follow-up reminders</span>
         </div>
       </aside>
 
@@ -162,6 +213,66 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
               <li key={item}>{item}</li>
             ))}
           </ul>
+
+          <div className="autopilot-reminder-box">
+            <div>
+              <span className="badge">Suggested Reminders</span>
+              <h4>Follow-Up Autopilot</h4>
+              <p className="muted">
+                Add these reminders so you do not forget proposal, WhatsApp, or call follow-up.
+              </p>
+            </div>
+
+            <div className="suggested-reminders">
+              <button
+                onClick={() =>
+                  createSuggestedReminder(
+                    "proposal",
+                    "Send proposal",
+                    "proposal",
+                    suggestedDate(0, 17),
+                    "high"
+                  )
+                }
+              >
+                {reminderSaving === "proposal" ? "Adding..." : "Send proposal today"}
+              </button>
+
+              <button
+                onClick={() =>
+                  createSuggestedReminder(
+                    "whatsapp",
+                    "WhatsApp follow-up",
+                    "whatsapp",
+                    suggestedDate(1, 10),
+                    "medium"
+                  )
+                }
+              >
+                {reminderSaving === "whatsapp" ? "Adding..." : "Follow up tomorrow"}
+              </button>
+
+              <button
+                onClick={() =>
+                  createSuggestedReminder(
+                    "call",
+                    "Call client",
+                    "call",
+                    suggestedDate(2, 11),
+                    "medium"
+                  )
+                }
+              >
+                {reminderSaving === "call" ? "Adding..." : "Call after 2 days"}
+              </button>
+            </div>
+
+            {message ? <p className="auth-message">{message}</p> : null}
+
+            <Link className="btn secondary" href="/dashboard/reminders">
+              Open Reminder Center
+            </Link>
+          </div>
         </section>
       ) : null}
     </div>

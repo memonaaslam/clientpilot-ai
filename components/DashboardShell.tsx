@@ -24,6 +24,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
           <Link href="/dashboard/upload">Upload Meeting</Link>
           <Link href="/dashboard/meetings">Meetings</Link>
           <Link href="/dashboard/tasks">Tasks</Link>
+          <Link href="/dashboard/reminders">Reminders</Link>
           <Link href="/dashboard/proposals">Proposals</Link>
           <Link href="/dashboard/settings">Settings</Link>
           <Link href="/dashboard/subscription">Subscription</Link>
