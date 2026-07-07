@@ -1281,3 +1281,286 @@ h1 { font-size: clamp(42px, 6vw, 74px); line-height: .94; letter-spacing: -0.07e
 .remember-row-clean span {
   line-height: 1.4;
 }
+
+/* Odoo-inspired Light SaaS Theme */
+:root {
+  --gold: #714b67;
+  --brand: #714b67;
+  --brand-2: #00a09d;
+  --page-bg: #f8f7f5;
+  --surface: #ffffff;
+  --surface-soft: #fbfaf8;
+  --text-main: #1f2937;
+  --text-muted: #667085;
+  --border-soft: #e7e3dd;
+}
+
+/* Global */
+html,
+body {
+  background: var(--page-bg) !important;
+  color: var(--text-main) !important;
+}
+
+/* Login + Legal pages */
+.login-page-clean,
+.legal-page,
+.modern-auth-page {
+  background:
+    radial-gradient(circle at top left, rgba(113,75,103,.10), transparent 34%),
+    linear-gradient(135deg, #ffffff 0%, #f8f7f5 55%, #f1efeb 100%) !important;
+  color: var(--text-main) !important;
+}
+
+.login-brand-clean,
+.legal-brand {
+  color: var(--text-main) !important;
+}
+
+.login-brand-clean span,
+.legal-brand span {
+  color: var(--brand) !important;
+}
+
+.login-copy-clean h1,
+.legal-hero h1,
+.modern-auth-header h1 {
+  color: var(--text-main) !important;
+}
+
+.login-copy-clean p,
+.legal-hero p,
+.legal-section p,
+.login-note-clean,
+.modern-auth-note {
+  color: var(--text-muted) !important;
+}
+
+.login-card-clean,
+.legal-card,
+.modern-login-card {
+  background: rgba(255,255,255,.88) !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: 0 24px 70px rgba(16,24,40,.10) !important;
+  color: var(--text-main) !important;
+}
+
+.login-tabs-clean {
+  background: #f1efeb !important;
+}
+
+.login-tabs-clean button {
+  color: var(--text-muted) !important;
+}
+
+.login-tabs-clean button.active {
+  background: var(--brand) !important;
+  color: #fff !important;
+}
+
+.login-form-clean input,
+.modern-login-card .input,
+.input,
+.textarea,
+select.input {
+  background: #fff !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+.login-form-clean input::placeholder,
+.input::placeholder,
+.textarea::placeholder {
+  color: #98a2b3 !important;
+}
+
+.login-submit-clean,
+.btn.gold {
+  background: var(--brand) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(113,75,103,.20) !important;
+}
+
+.login-reset-clean,
+.forgot-link-btn {
+  color: var(--brand) !important;
+}
+
+.auth-error {
+  background: #fff1f3 !important;
+  border: 1px solid #ffd6dc !important;
+  color: #b42318 !important;
+}
+
+.auth-message {
+  background: #ecfdf3 !important;
+  border: 1px solid #abefc6 !important;
+  color: #067647 !important;
+}
+
+.remember-row-clean {
+  color: var(--text-muted) !important;
+}
+
+.remember-row-clean input {
+  accent-color: var(--brand) !important;
+}
+
+/* Dashboard */
+.shell {
+  min-height: 100vh;
+  background: var(--page-bg) !important;
+  color: var(--text-main) !important;
+}
+
+.sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid var(--border-soft) !important;
+  box-shadow: 10px 0 40px rgba(16,24,40,.06) !important;
+}
+
+.side-title {
+  color: var(--text-main) !important;
+}
+
+.side-title span {
+  color: var(--brand) !important;
+}
+
+.side-nav a {
+  color: var(--text-muted) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+}
+
+.side-nav a:hover {
+  color: var(--brand) !important;
+  background: #f5f1f4 !important;
+  border-color: #eadfe7 !important;
+}
+
+.main {
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+
+/* Cards and sections */
+.card,
+.empty-state,
+.proposal-card,
+.meeting-card,
+.client-card,
+.stat-card,
+.hero-mini-card,
+.subscription-usage-card,
+.current-plan-clean,
+.pricing-card-clean {
+  background: #ffffff !important;
+  border: 1px solid var(--border-soft) !important;
+  box-shadow: 0 14px 40px rgba(16,24,40,.07) !important;
+  color: var(--text-main) !important;
+}
+
+.card h1,
+.card h2,
+.card h3,
+.page-hero h1,
+.empty-state h2,
+.subscription-clean-hero h1,
+.current-plan-clean h2,
+.pricing-top-clean h3,
+.pricing-price-clean {
+  color: var(--text-main) !important;
+}
+
+.muted,
+.subscription-clean-hero p,
+.current-plan-clean p,
+.pricing-top-clean p,
+.pricing-list-clean,
+.subscription-usage-card span,
+.current-plan-clean span {
+  color: var(--text-muted) !important;
+}
+
+.badge,
+.pill.soft {
+  background: #f5f1f4 !important;
+  border-color: #eadfe7 !important;
+  color: var(--brand) !important;
+}
+
+.btn.secondary,
+.logout-btn,
+.pricing-action-clean .btn.secondary {
+  background: #fff !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+.btn.secondary:hover,
+.logout-btn:hover {
+  background: #f5f1f4 !important;
+  border-color: #eadfe7 !important;
+  color: var(--brand) !important;
+}
+
+/* Subscription */
+.usage-bar {
+  background: #eee9ed !important;
+}
+
+.usage-bar i {
+  background: linear-gradient(90deg, var(--brand), var(--brand-2)) !important;
+}
+
+.current-plan-number {
+  background: linear-gradient(135deg, var(--brand), #8f6284) !important;
+  color: #fff !important;
+}
+
+.pricing-card-clean.active {
+  border-color: rgba(113,75,103,.40) !important;
+  box-shadow: 0 20px 60px rgba(113,75,103,.12) !important;
+}
+
+/* Tables and outputs */
+.table,
+table {
+  background: #fff !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+th,
+td {
+  border-color: #edf0f2 !important;
+  color: var(--text-main) !important;
+}
+
+.proposal-output,
+pre {
+  background: #fbfaf8 !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+/* Legal links */
+.login-legal-links a,
+.legal-footer-links a,
+.sidebar-legal-links a {
+  color: var(--text-muted) !important;
+}
+
+.login-legal-links a:hover,
+.legal-footer-links a:hover,
+.sidebar-legal-links a:hover {
+  color: var(--brand) !important;
+}
+
+/* File/logo preview */
+.logo-preview {
+  background: #fff !important;
+  border: 1px solid var(--border-soft) !important;
+}
+
