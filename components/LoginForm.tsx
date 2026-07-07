@@ -130,56 +130,16 @@ export function LoginForm() {
     }
   }
 
-  const inputStyle = {
-    width: "100%",
-    minHeight: 52,
-    borderRadius: 16,
-    border: "1px solid rgba(230,195,106,.18)",
-    background: "rgba(255,255,255,.06)",
-    color: "#fff",
-    padding: "0 16px",
-    outline: "none",
-    fontSize: 15
-  };
-
   return (
-    <div
-      style={{
-        width: "100%",
-        borderRadius: 30,
-        padding: 26,
-        border: "1px solid rgba(230,195,106,.25)",
-        background: "rgba(15,14,10,.88)",
-        boxShadow: "0 30px 100px rgba(0,0,0,.5)",
-        backdropFilter: "blur(18px)"
-      }}
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 8,
-          marginBottom: 18,
-          padding: 6,
-          borderRadius: 18,
-          background: "rgba(255,255,255,.06)"
-        }}
-      >
+    <div className="login-card-clean">
+      <div className="login-tabs-clean">
         <button
           type="button"
+          className={mode === "signin" ? "active" : ""}
           onClick={() => {
             setMode("signin");
             setMessage("");
             setError("");
-          }}
-          style={{
-            border: 0,
-            borderRadius: 14,
-            padding: "12px 10px",
-            cursor: "pointer",
-            fontWeight: 800,
-            color: mode === "signin" ? "#111" : "#fff",
-            background: mode === "signin" ? "#e6c36a" : "transparent"
           }}
         >
           Sign In
@@ -187,29 +147,20 @@ export function LoginForm() {
 
         <button
           type="button"
+          className={mode === "signup" ? "active" : ""}
           onClick={() => {
             setMode("signup");
             setMessage("");
             setError("");
-          }}
-          style={{
-            border: 0,
-            borderRadius: 14,
-            padding: "12px 10px",
-            cursor: "pointer",
-            fontWeight: 800,
-            color: mode === "signup" ? "#111" : "#fff",
-            background: mode === "signup" ? "#e6c36a" : "transparent"
           }}
         >
           Create Account
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
+      <form className="login-form-clean" onSubmit={handleSubmit}>
         {mode === "signup" ? (
           <input
-            style={inputStyle}
             type="text"
             placeholder="Full name"
             value={name}
@@ -218,7 +169,6 @@ export function LoginForm() {
         ) : null}
 
         <input
-          style={inputStyle}
           type="email"
           placeholder="Email address"
           value={email}
@@ -227,7 +177,6 @@ export function LoginForm() {
         />
 
         <input
-          style={inputStyle}
           type="password"
           placeholder="Password"
           value={password}
@@ -235,76 +184,26 @@ export function LoginForm() {
           required
         />
 
-        {error ? (
-          <p
-            style={{
-              margin: 0,
-              borderRadius: 14,
-              padding: "12px 14px",
-              background: "rgba(255,80,80,.12)",
-              border: "1px solid rgba(255,120,120,.22)",
-              color: "#ffd7d7",
-              fontSize: 13
-            }}
-          >
-            {error}
-          </p>
-        ) : null}
+        {error ? <p className="auth-error">{error}</p> : null}
+        {message ? <p className="auth-message">{message}</p> : null}
 
-        {message ? (
-          <p
-            style={{
-              margin: 0,
-              borderRadius: 14,
-              padding: "12px 14px",
-              background: "rgba(94,255,170,.10)",
-              border: "1px solid rgba(94,255,170,.22)",
-              color: "#c8ffe0",
-              fontSize: 13
-            }}
-          >
-            {message}
-          </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            minHeight: 52,
-            border: 0,
-            borderRadius: 16,
-            cursor: "pointer",
-            fontWeight: 900,
-            color: "#111",
-            background: "linear-gradient(135deg, #f4d987, #b98b2f)",
-            boxShadow: "0 14px 34px rgba(230,195,106,.24)"
-          }}
-        >
+        <button className="login-submit-clean" type="submit" disabled={loading}>
           {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
         </button>
 
         {mode === "signin" ? (
           <button
+            className="login-reset-clean"
             type="button"
             onClick={sendResetPassword}
             disabled={resetLoading || !email}
-            style={{
-              border: 0,
-              background: "transparent",
-              color: "#e6c36a",
-              cursor: resetLoading || !email ? "not-allowed" : "pointer",
-              fontWeight: 800,
-              padding: 10,
-              opacity: resetLoading || !email ? .55 : 1
-            }}
           >
             {resetLoading ? "Sending reset email..." : "Forgot password?"}
           </button>
         ) : null}
       </form>
 
-      <p style={{ margin: "16px 0 0", color: "rgba(255,255,255,.58)", fontSize: 13, textAlign: "center" }}>
+      <p className="login-note-clean">
         {mode === "signin"
           ? "Login with your workspace email and password."
           : "Create your ClientPilot AI workspace account."}

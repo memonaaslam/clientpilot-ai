@@ -833,3 +833,430 @@ h1 { font-size: clamp(42px, 6vw, 74px); line-height: .94; letter-spacing: -0.07e
     border-radius: 24px;
   }
 }
+
+/* Clean Login */
+.login-page-clean {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 38px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(230,195,106,.14), transparent 34%),
+    linear-gradient(135deg, #0a0906 0%, #17130c 48%, #0a0906 100%);
+}
+
+.login-shell-clean {
+  width: 100%;
+  max-width: 460px;
+  text-align: center;
+}
+
+.login-brand-clean,
+.legal-brand {
+  display: inline-flex;
+  text-decoration: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -.03em;
+  margin-bottom: 24px;
+}
+
+.login-brand-clean span,
+.legal-brand span {
+  color: var(--gold);
+}
+
+.login-copy-clean {
+  margin-bottom: 22px;
+}
+
+.login-copy-clean h1 {
+  margin: 16px 0 10px;
+  font-size: clamp(36px, 5vw, 50px);
+  line-height: 1;
+  letter-spacing: -.05em;
+}
+
+.login-copy-clean p {
+  margin: 0 auto;
+  max-width: 420px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.login-card-clean {
+  width: 100%;
+  text-align: left;
+  border-radius: 28px;
+  padding: 24px;
+  border: 1px solid rgba(230,195,106,.22);
+  background: rgba(255,255,255,.055);
+  box-shadow: 0 30px 90px rgba(0,0,0,.42);
+  backdrop-filter: blur(18px);
+}
+
+.login-tabs-clean {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+}
+
+.login-tabs-clean button {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 10px;
+  cursor: pointer;
+  font-weight: 850;
+  color: #fff;
+  background: transparent;
+}
+
+.login-tabs-clean button.active {
+  color: #15120c;
+  background: var(--gold);
+}
+
+.login-form-clean {
+  display: grid;
+  gap: 12px;
+}
+
+.login-form-clean input {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 16px;
+  border: 1px solid rgba(230,195,106,.18);
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  padding: 0 16px;
+  outline: none;
+  font-size: 15px;
+}
+
+.login-form-clean input::placeholder {
+  color: rgba(255,255,255,.48);
+}
+
+.login-submit-clean {
+  min-height: 52px;
+  width: 100%;
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 950;
+  color: #15120c;
+  background: linear-gradient(135deg, #f4d987, #b98b2f);
+  box-shadow: 0 16px 36px rgba(230,195,106,.22);
+}
+
+.login-reset-clean {
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  font-weight: 850;
+  padding: 10px;
+  text-align: center;
+}
+
+.login-reset-clean:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.login-note-clean {
+  margin: 15px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.login-legal-links,
+.legal-footer-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.login-legal-links a,
+.legal-footer-links a,
+.sidebar-legal-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.login-legal-links a:hover,
+.legal-footer-links a:hover,
+.sidebar-legal-links a:hover {
+  color: var(--gold);
+}
+
+/* Legal pages */
+.legal-page {
+  min-height: 100vh;
+  padding: 42px 16px;
+  background:
+    radial-gradient(circle at top right, rgba(230,195,106,.12), transparent 32%),
+    linear-gradient(135deg, #0a0906 0%, #15120c 52%, #0a0906 100%);
+}
+
+.legal-shell {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.legal-hero {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.legal-hero h1 {
+  margin: 16px 0 10px;
+  font-size: clamp(38px, 6vw, 64px);
+  letter-spacing: -.05em;
+}
+
+.legal-hero p {
+  max-width: 680px;
+  margin: 0 auto 10px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.legal-hero small {
+  color: rgba(255,255,255,.45);
+}
+
+.legal-card {
+  border-radius: 28px;
+  padding: clamp(22px, 4vw, 42px);
+  border: 1px solid rgba(230,195,106,.18);
+  background: rgba(255,255,255,.055);
+  box-shadow: 0 28px 90px rgba(0,0,0,.34);
+}
+
+.legal-section + .legal-section {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+.legal-section h2 {
+  margin: 0 0 12px;
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.legal-section p {
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+/* Dashboard polish */
+.sidebar-bottom {
+  margin-top: auto;
+  display: grid;
+  gap: 14px;
+}
+
+.sidebar-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* Subscription clean page */
+.subscription-clean-page {
+  display: grid;
+  gap: 24px;
+}
+
+.subscription-clean-hero {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.subscription-clean-hero h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(38px, 5vw, 58px);
+  letter-spacing: -.05em;
+  line-height: 1;
+}
+
+.subscription-clean-hero p {
+  max-width: 680px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.subscription-usage-card,
+.current-plan-clean,
+.pricing-card-clean {
+  border: 1px solid rgba(230,195,106,.18);
+  background: rgba(255,255,255,.055);
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(0,0,0,.22);
+}
+
+.subscription-usage-card {
+  padding: 24px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.subscription-usage-card span,
+.current-plan-clean span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.subscription-usage-card strong {
+  font-size: 38px;
+  letter-spacing: -.04em;
+}
+
+.usage-bar {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.08);
+}
+
+.usage-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #b98b2f, #f4d987);
+}
+
+.current-plan-clean {
+  padding: 26px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+
+.current-plan-clean h2 {
+  margin: 6px 0 8px;
+  font-size: 30px;
+}
+
+.current-plan-clean p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.current-plan-number {
+  width: 160px;
+  height: 120px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #15120c;
+  font-size: 38px;
+  font-weight: 950;
+  background: linear-gradient(135deg, #f4d987, #b98b2f);
+}
+
+.current-plan-number small {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.pricing-grid-clean {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.pricing-card-clean {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.pricing-card-clean.active {
+  border-color: rgba(230,195,106,.6);
+  box-shadow: 0 28px 90px rgba(230,195,106,.12);
+}
+
+.pricing-top-clean h3 {
+  margin: 16px 0 8px;
+  font-size: 25px;
+}
+
+.pricing-price-clean {
+  font-size: 30px;
+  font-weight: 950;
+  letter-spacing: -.04em;
+  margin-bottom: 8px;
+}
+
+.pricing-top-clean p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 13px;
+}
+
+.pricing-list-clean {
+  margin: 20px 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+  font-size: 14px;
+}
+
+.pricing-action-clean {
+  margin-top: auto;
+}
+
+.pricing-action-clean .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 1180px) {
+  .pricing-grid-clean {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .subscription-clean-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .current-plan-clean {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .current-plan-number {
+    width: 100%;
+  }
+
+  .pricing-grid-clean {
+    grid-template-columns: 1fr;
+  }
+}

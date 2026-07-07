@@ -21,8 +21,9 @@ export default async function SubscriptionPage() {
   if (!user) {
     return (
       <DashboardShell>
-        <div className="card">
-          <p>Please login first from /login.</p>
+        <div className="empty-state">
+          <h2>Please sign in first</h2>
+          <p className="muted">Login to view your subscription, usage, and plan limits.</p>
         </div>
       </DashboardShell>
     );
@@ -31,75 +32,93 @@ export default async function SubscriptionPage() {
   const limitStatus = await getPlanLimitStatus(user.id);
   const currentPlan = limitStatus.subscription.plan;
   const currentRank = PLAN_RANK[currentPlan];
+  const usagePercent = Math.min(Math.round((limitStatus.usage / limitStatus.limit) * 100), 100);
 
   const planOrder: PlanId[] = ["free", "starter", "pro", "agency"];
 
   return (
     <DashboardShell>
-      <div className="page-hero">
-        <div>
-          <span className="badge">Subscription</span>
-          <h1 style={{ fontSize: 46 }}>Plans & Usage</h1>
-          <p className="muted">
-            Manage your ClientPilot AI subscription and monthly meeting upload limits.
-          </p>
-        </div>
+      <div className="subscription-clean-page">
+        <div className="subscription-clean-hero">
+          <div>
+            <span className="badge">Subscription</span>
+            <h1>Plans & Usage</h1>
+            <p>
+              Manage your ClientPilot AI subscription, plan benefits, and monthly meeting upload limits.
+            </p>
+          </div>
 
-        <div className="hero-mini-card">
-          <strong>{limitStatus.usage}/{limitStatus.limit}</strong>
-          <span>Meetings this month</span>
-        </div>
-      </div>
-
-      <div className="card">
-        <h3>Current Plan</h3>
-        <p className="muted">
-          You are currently on <strong>{PLANS[currentPlan].name}</strong>. You have{" "}
-          <strong>{limitStatus.remaining}</strong> meeting uploads remaining this month.
-        </p>
-      </div>
-
-      <div className="grid three">
-        {planOrder.map((planId) => {
-          const plan = PLANS[planId];
-          const isCurrent = currentPlan === planId;
-          const isLowerPlan = PLAN_RANK[planId] < currentRank;
-          const isUpgrade = PLAN_RANK[planId] > currentRank;
-
-          return (
-            <div className={isCurrent ? "card plan-card active-plan" : "card plan-card"} key={plan.id}>
-              <span className="pill soft">
-                {isCurrent ? "Current Plan" : isLowerPlan ? "Included" : "Upgrade Option"}
-              </span>
-
-              <h3>{plan.name}</h3>
-              <h2>{plan.priceLabel}</h2>
-
-              <p className="muted">
-                {plan.monthlyMeetingLimit} meeting uploads/month · {plan.userLimit} user
-                {plan.userLimit > 1 ? "s" : ""}
-              </p>
-
-              <ul className="plan-list">
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-
-              {isCurrent ? (
-                <button className="btn secondary" type="button" disabled>
-                  Active
-                </button>
-              ) : isLowerPlan ? (
-                <button className="btn secondary" type="button" disabled>
-                  Included in {PLANS[currentPlan].name}
-                </button>
-              ) : isUpgrade ? (
-                <CheckoutButton plan={plan.id} />
-              ) : null}
+          <div className="subscription-usage-card">
+            <span>Meetings this month</span>
+            <strong>{limitStatus.usage}/{limitStatus.limit}</strong>
+            <div className="usage-bar">
+              <i style={{ width: `${usagePercent}%` }} />
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="current-plan-clean">
+          <div>
+            <span>Current Plan</span>
+            <h2>{PLANS[currentPlan].name}</h2>
+            <p>
+              You have <strong>{limitStatus.remaining}</strong> meeting uploads remaining this month.
+            </p>
+          </div>
+
+          <div className="current-plan-number">
+            {limitStatus.limit}
+            <small>monthly uploads</small>
+          </div>
+        </div>
+
+        <div className="pricing-grid-clean">
+          {planOrder.map((planId) => {
+            const plan = PLANS[planId];
+            const isCurrent = currentPlan === planId;
+            const isLowerPlan = PLAN_RANK[planId] < currentRank;
+            const isUpgrade = PLAN_RANK[planId] > currentRank;
+
+            return (
+              <article
+                className={isCurrent ? "pricing-card-clean active" : "pricing-card-clean"}
+                key={plan.id}
+              >
+                <div className="pricing-top-clean">
+                  <span className="pill soft">
+                    {isCurrent ? "Current Plan" : isLowerPlan ? "Included" : "Upgrade"}
+                  </span>
+                  <h3>{plan.name}</h3>
+                  <div className="pricing-price-clean">{plan.priceLabel}</div>
+                  <p>
+                    {plan.monthlyMeetingLimit} uploads/month · {plan.userLimit} user
+                    {plan.userLimit > 1 ? "s" : ""}
+                  </p>
+                </div>
+
+                <ul className="pricing-list-clean">
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+
+                <div className="pricing-action-clean">
+                  {isCurrent ? (
+                    <button className="btn secondary" type="button" disabled>
+                      Active
+                    </button>
+                  ) : isLowerPlan ? (
+                    <button className="btn secondary" type="button" disabled>
+                      Included in {PLANS[currentPlan].name}
+                    </button>
+                  ) : isUpgrade ? (
+                    <CheckoutButton plan={plan.id} />
+                  ) : null}
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </DashboardShell>
   );
