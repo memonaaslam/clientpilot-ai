@@ -7,8 +7,8 @@ const features = [
     body: "Keep every client conversation, meeting note, proposal, and follow-up in one organized workspace."
   },
   {
-    title: "AI Meeting Summaries",
-    body: "Turn messy notes or meeting recordings into clear summaries, action items, and next steps."
+    title: "Smart Meeting Summaries",
+    body: "Turn pasted meeting notes into clear summaries, action items, and next steps without paid AI cost."
   },
   {
     title: "Proposal Generator",
@@ -23,10 +23,8 @@ const features = [
 const plans = [
   {
     name: "Free Trial",
-    price: "const plans = [
-  {
-    name: "Starter",",
-    body: "Try ClientPilot AI with basic client memory, demo AI mode, and 5 meeting uploads per month.",
+    price: "$0",
+    body: "Try ClientPilot AI with client memory, Free Smart Mode, proposal generator, and 5 meeting uploads per month.",
     link: "/login",
     button: "Start Free"
   },
@@ -75,7 +73,7 @@ export default function HomePage() {
 
       <section className="cp-hero" id="demo">
         <div className="cp-hero-copy">
-          <span className="cp-eyebrow">AI client follow-up system</span>
+          <span className="cp-eyebrow">Smart client follow-up system</span>
 
           <h1>
             Turn every client meeting into a proposal, task list, and follow-up.
@@ -98,8 +96,8 @@ export default function HomePage() {
 
           <div className="cp-stats-row">
             <div>
-              <strong>AI</strong>
-              <span>summaries</span>
+              <strong>Free</strong>
+              <span>Smart Mode</span>
             </div>
             <div>
               <strong>1-click</strong>
@@ -121,7 +119,7 @@ export default function HomePage() {
           <div>
             <span>CRM</span>
             <span>Meetings</span>
-            <span>AI Summary</span>
+            <span>Smart Summary</span>
             <span>Proposals</span>
             <span>Pipeline</span>
             <span>Follow-ups</span>
@@ -131,7 +129,7 @@ export default function HomePage() {
           <div>
             <span>CRM</span>
             <span>Meetings</span>
-            <span>AI Summary</span>
+            <span>Smart Summary</span>
             <span>Proposals</span>
             <span>Pipeline</span>
             <span>Follow-ups</span>
@@ -169,14 +167,14 @@ export default function HomePage() {
           <div className="cp-flow-steps">
             <div>
               <strong>01</strong>
-              <h3>Upload or record</h3>
-              <p>Add meeting notes or audio from your client conversation.</p>
+              <h3>Paste notes</h3>
+              <p>Add meeting notes from your client conversation.</p>
             </div>
 
             <div>
               <strong>02</strong>
-              <h3>AI organizes it</h3>
-              <p>Get transcript, summary, next steps, and tasks automatically.</p>
+              <h3>Smart Mode organizes it</h3>
+              <p>Get summary, next steps, and tasks without paid AI cost.</p>
             </div>
 
             <div>
@@ -192,7 +190,7 @@ export default function HomePage() {
         <div className="cp-section-head">
           <span className="cp-eyebrow">Pricing</span>
           <h2>Simple plans for solo sellers and agencies.</h2>
-          <p>Start with the plan that matches your monthly meeting volume.</p>
+          <p>Start free, then upgrade when your client workflow grows.</p>
         </div>
 
         <div className="cp-pricing-grid">
@@ -209,7 +207,7 @@ export default function HomePage() {
 
       <section className="cp-final-cta">
         <h2>Ready to make your client follow-up feel automatic?</h2>
-        <p>Launch your workspace, add your first client, and let AI help you follow up faster.</p>
+        <p>Launch your workspace, add your first client, and start following up faster.</p>
         <Link href="/login" className="cp-primary-btn">
           Open ClientPilot AI
         </Link>

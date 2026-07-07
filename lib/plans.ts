@@ -20,7 +20,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     features: [
       "5 meeting uploads per month",
       "Basic client memory",
-      "Demo AI mode",
+      "Free Smart Mode",
       "Proposal generator"
     ]
   },
@@ -34,7 +34,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     features: [
       "20 meeting uploads per month",
       "Client memory",
-      "AI summaries",
+      "Smart summaries",
       "Proposal generator",
       "White-label settings"
     ]
@@ -49,7 +49,7 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     features: [
       "100 meeting uploads per month",
       "Advanced client memory",
-      "AI summaries",
+      "Smart summaries",
       "Premium proposal PDF",
       "Custom logo branding"
     ]

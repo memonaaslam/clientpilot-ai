@@ -1,84 +1,22 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { getPlanLimitStatus } from "@/lib/subscription";
+import { createSmartMeetingResult } from "@/lib/smart-meeting";
 
 export const runtime = "nodejs";
 
-const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
-const SUPPORTED_AUDIO_EXTENSIONS = ["mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm"];
+async function getTextFromFile(file: File) {
+  const fileName = file.name.toLowerCase();
 
-function getDemoTranscript(title: string) {
-  return `Demo transcript for ${title || "client meeting"}.
-
-Client discussed their business needs, current challenges, budget expectations, and preferred timeline.
-
-Key points:
-- Client wants a clear professional solution.
-- Client needs fast follow-up.
-- Client asked for pricing and next steps.
-- Client prefers a simple proposal with deliverables, timeline, and cost.
-
-This is demo AI output. Add OPENAI_API_KEY and set USE_DEMO_AI=false to enable real transcription.`;
-}
-
-function createSummary(transcript: string) {
-  const clean = transcript.replace(/\s+/g, " ").trim();
-  const short = clean.length > 500 ? `${clean.slice(0, 500)}...` : clean;
-
-  return `Meeting summary: ${short}`;
-}
-
-function createActionItems() {
-  return [
-    "Send a professional proposal to the client.",
-    "Follow up on pricing and timeline.",
-    "Add client requirements to the CRM.",
-    "Move the client to the correct pipeline stage."
-  ];
-}
-
-function getFileExtension(fileName: string) {
-  return fileName.split(".").pop()?.toLowerCase() || "";
-}
-
-async function transcribeAudio(file: File) {
-  const useDemo = process.env.USE_DEMO_AI === "true";
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (useDemo || !apiKey) {
-    return {
-      transcript: "",
-      mode: "demo"
-    };
+  if (
+    file.type.startsWith("text/") ||
+    fileName.endsWith(".txt") ||
+    fileName.endsWith(".md")
+  ) {
+    return await file.text();
   }
 
-  if (file.size > MAX_AUDIO_SIZE) {
-    throw new Error("Audio file must be 25 MB or smaller.");
-  }
-
-  const extension = getFileExtension(file.name);
-
-  if (!SUPPORTED_AUDIO_EXTENSIONS.includes(extension)) {
-    throw new Error("Unsupported audio type. Use mp3, mp4, mpeg, mpga, m4a, wav, or webm.");
-  }
-
-  const openai = new OpenAI({
-    apiKey
-  });
-
-  const model = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-mini-transcribe";
-
-  const result = await openai.audio.transcriptions.create({
-    file,
-    model,
-    response_format: "text"
-  });
-
-  return {
-    transcript: typeof result === "string" ? result : String((result as any).text || ""),
-    mode: "openai"
-  };
+  return "";
 }
 
 export async function POST(request: Request) {
@@ -115,43 +53,32 @@ export async function POST(request: Request) {
 
     const clientId = String(formData.get("clientId") || formData.get("client_id") || "").trim();
 
-    const manualTranscript = String(
-      formData.get("transcript") || formData.get("notes") || ""
+    let notes = String(
+      formData.get("transcript") || formData.get("notes") || formData.get("content") || ""
     ).trim();
 
     const fileValue = formData.get("file") || formData.get("audio");
-    const audioFile =
-      fileValue && typeof fileValue === "object" && "size" in fileValue
-        ? (fileValue as File)
-        : null;
 
-    let transcript = manualTranscript;
-    let aiMode = "manual";
-
-    if (audioFile && Number(audioFile.size) > 0) {
-      const result = await transcribeAudio(audioFile);
-
-      if (result.mode === "demo") {
-        transcript = getDemoTranscript(title);
-        aiMode = "demo";
-      } else {
-        transcript = result.transcript;
-        aiMode = "openai";
-      }
+    if (!notes && fileValue && typeof fileValue === "object" && "size" in fileValue) {
+      notes = await getTextFromFile(fileValue as File);
     }
 
-    if (!transcript) {
-      transcript = getDemoTranscript(title);
-      aiMode = "demo";
+    if (!notes) {
+      return NextResponse.json(
+        {
+          error:
+            "Free Smart Mode works with pasted meeting notes or .txt files. Real audio transcription can be enabled later with an OpenAI key."
+        },
+        { status: 400 }
+      );
     }
 
-    const summary = createSummary(transcript);
-    const actionItems = createActionItems();
+    const smart = createSmartMeetingResult(title, notes);
 
     const basePayload: Record<string, any> = {
       user_id: user.id,
       title,
-      transcript
+      transcript: notes
     };
 
     if (clientId) {
@@ -160,8 +87,8 @@ export async function POST(request: Request) {
 
     let insertPayload: Record<string, any> = {
       ...basePayload,
-      summary,
-      action_items: actionItems
+      summary: smart.summary,
+      action_items: smart.actionItems
     };
 
     let { data: meeting, error } = await supabase
@@ -173,7 +100,7 @@ export async function POST(request: Request) {
     if (error) {
       insertPayload = {
         ...basePayload,
-        summary
+        summary: smart.summary
       };
 
       const retry = await supabase
@@ -207,17 +134,19 @@ export async function POST(request: Request) {
       success: true,
       meeting,
       meetingId: meeting?.id,
-      transcript,
-      summary,
-      actionItems,
-      aiMode,
+      transcript: notes,
+      summary: smart.summary,
+      actionItems: smart.actionItems,
+      followUp: smart.followUp,
+      proposalPoints: smart.proposalPoints,
+      aiMode: "smart-free",
       usage: limitStatus.usage + 1,
       limit: limitStatus.limit,
       remaining: Math.max(limitStatus.limit - limitStatus.usage - 1, 0),
       plan: limitStatus.subscription.plan
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to transcribe meeting.";
+    const message = error instanceof Error ? error.message : "Unable to process meeting.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
