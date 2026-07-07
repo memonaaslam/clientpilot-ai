@@ -4,6 +4,13 @@ import { PLANS, type PlanId } from "@/lib/plans";
 import { getPlanLimitStatus } from "@/lib/subscription";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
+const PLAN_RANK: Record<PlanId, number> = {
+  free: 0,
+  starter: 1,
+  pro: 2,
+  agency: 3
+};
+
 export default async function SubscriptionPage() {
   const supabase = await createSupabaseServerClient();
 
@@ -23,6 +30,7 @@ export default async function SubscriptionPage() {
 
   const limitStatus = await getPlanLimitStatus(user.id);
   const currentPlan = limitStatus.subscription.plan;
+  const currentRank = PLAN_RANK[currentPlan];
 
   const planOrder: PlanId[] = ["free", "starter", "pro", "agency"];
 
@@ -46,8 +54,8 @@ export default async function SubscriptionPage() {
       <div className="card">
         <h3>Current Plan</h3>
         <p className="muted">
-          You are currently on <strong>{PLANS[currentPlan].name}</strong>. 
-          You have <strong>{limitStatus.remaining}</strong> meeting uploads remaining this month.
+          You are currently on <strong>{PLANS[currentPlan].name}</strong>. You have{" "}
+          <strong>{limitStatus.remaining}</strong> meeting uploads remaining this month.
         </p>
       </div>
 
@@ -55,10 +63,15 @@ export default async function SubscriptionPage() {
         {planOrder.map((planId) => {
           const plan = PLANS[planId];
           const isCurrent = currentPlan === planId;
+          const isLowerPlan = PLAN_RANK[planId] < currentRank;
+          const isUpgrade = PLAN_RANK[planId] > currentRank;
 
           return (
             <div className={isCurrent ? "card plan-card active-plan" : "card plan-card"} key={plan.id}>
-              <span className="pill soft">{isCurrent ? "Current Plan" : "Upgrade Option"}</span>
+              <span className="pill soft">
+                {isCurrent ? "Current Plan" : isLowerPlan ? "Included" : "Upgrade Option"}
+              </span>
+
               <h3>{plan.name}</h3>
               <h2>{plan.priceLabel}</h2>
 
@@ -77,9 +90,13 @@ export default async function SubscriptionPage() {
                 <button className="btn secondary" type="button" disabled>
                   Active
                 </button>
-              ) : (
+              ) : isLowerPlan ? (
+                <button className="btn secondary" type="button" disabled>
+                  Included in {PLANS[currentPlan].name}
+                </button>
+              ) : isUpgrade ? (
                 <CheckoutButton plan={plan.id} />
-              )}
+              ) : null}
             </div>
           );
         })}
