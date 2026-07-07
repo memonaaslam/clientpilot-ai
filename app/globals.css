@@ -602,3 +602,53 @@ h1 { font-size: clamp(42px, 6vw, 74px); line-height: .94; letter-spacing: -0.07e
   text-transform: uppercase;
   margin-bottom: 18px;
 }
+
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 28px;
+  border-radius: 28px;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at top right, rgba(230,195,106,.14), transparent 34%),
+    rgba(255,255,255,.045);
+  box-shadow: var(--shadow);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 6px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.04);
+}
+
+.auth-tab {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 10px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.auth-tab.active {
+  color: #101010;
+  background: var(--gold);
+}
+
+.auth-error {
+  color: #ffb4b4;
+  margin: 0;
+  font-size: 14px;
+}
+
+.auth-message {
+  color: var(--gold);
+  margin: 0;
+  font-size: 14px;
+}
