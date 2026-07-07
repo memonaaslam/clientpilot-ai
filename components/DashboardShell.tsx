@@ -13,7 +13,7 @@ export async function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Link href="/" className="side-title">
+        <Link href="/dashboard" className="side-title">
           ClientPilot<span style={{ color: "var(--gold)" }}>AI</span>
         </Link>
 
