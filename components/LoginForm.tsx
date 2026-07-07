@@ -8,7 +8,7 @@ function getErrorMessage(error: unknown) {
   if (!error) return "Something went wrong. Please try again.";
   if (typeof error === "string") return error;
 
-  if (typeof error === "object" && "message" in error) {
+  if (typeof error === "object" && error !== null && "message" in error) {
     const message = (error as { message?: unknown }).message;
     if (message) return String(message);
   }
@@ -26,6 +26,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -39,13 +40,11 @@ export function LoginForm() {
     try {
       if (!email || !password) {
         setError("Please enter email and password.");
-        setLoading(false);
         return;
       }
 
       if (password.length < 6) {
         setError("Password must be at least 6 characters.");
-        setLoading(false);
         return;
       }
 
@@ -65,7 +64,6 @@ export function LoginForm() {
 
         if (error) {
           setError(getErrorMessage(error));
-          setLoading(false);
           return;
         }
 
@@ -76,7 +74,6 @@ export function LoginForm() {
         }
 
         setMessage("Account created. You can now sign in.");
-        setLoading(false);
         return;
       }
 
@@ -87,7 +84,6 @@ export function LoginForm() {
 
       if (error) {
         setError(getErrorMessage(error));
-        setLoading(false);
         return;
       }
 
@@ -95,52 +91,19 @@ export function LoginForm() {
       router.refresh();
     } catch (error) {
       setError(getErrorMessage(error));
+    } finally {
       setLoading(false);
     }
   }
 
-  async function sendMagicLink() {
-    setLoading(true);
-    setMessage("");
-    setError("");
-
-    try {
-      if (!email) {
-        setError("Please enter your email first.");
-        setLoading(false);
-        return;
-      }
-
-      const origin = window.location.origin;
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${origin}/auth/callback`
-        }
-      });
-
-      if (error) {
-        setError(getErrorMessage(error));
-      } else {
-        setMessage("Magic link sent. Please check your email inbox or spam folder.");
-      }
-    } catch (error) {
-      setError(getErrorMessage(error));
-    }
-
-    setLoading(false);
-  }
-
   async function sendResetPassword() {
-    setLoading(true);
+    setResetLoading(true);
     setMessage("");
     setError("");
 
     try {
       if (!email) {
         setError("Please enter your email first.");
-        setLoading(false);
         return;
       }
 
@@ -152,14 +115,15 @@ export function LoginForm() {
 
       if (error) {
         setError(getErrorMessage(error));
-      } else {
-        setMessage("Password reset email sent. Please check your inbox or spam folder.");
+        return;
       }
+
+      setMessage("Password reset email sent. Please check your inbox or spam folder.");
     } catch (error) {
       setError(getErrorMessage(error));
+    } finally {
+      setResetLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
@@ -216,7 +180,7 @@ export function LoginForm() {
           placeholder="Password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          required={mode === "signin" || mode === "signup"}
+          required
         />
 
         {error ? <p className="auth-error">{error}</p> : null}
@@ -227,25 +191,14 @@ export function LoginForm() {
         </button>
 
         {mode === "signin" ? (
-          <>
-            <button
-              className="btn secondary"
-              type="button"
-              onClick={sendResetPassword}
-              disabled={loading || !email}
-            >
-              Forgot Password?
-            </button>
-
-            <button
-              className="btn secondary"
-              type="button"
-              onClick={sendMagicLink}
-              disabled={loading || !email}
-            >
-              Send Magic Link Instead
-            </button>
-          </>
+          <button
+            className="btn secondary"
+            type="button"
+            onClick={sendResetPassword}
+            disabled={resetLoading || !email}
+          >
+            {resetLoading ? "Sending reset email..." : "Forgot Password?"}
+          </button>
         ) : null}
       </form>
 
