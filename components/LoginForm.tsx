@@ -92,6 +92,12 @@ export function LoginForm() {
     setMessage("");
     setError("");
 
+    if (!email) {
+      setError("Please enter your email first.");
+      setLoading(false);
+      return;
+    }
+
     const origin = window.location.origin;
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -105,6 +111,32 @@ export function LoginForm() {
       setError(error.message);
     } else {
       setMessage("Magic link sent. Please check your email.");
+    }
+
+    setLoading(false);
+  }
+
+  async function sendResetPassword() {
+    setLoading(true);
+    setMessage("");
+    setError("");
+
+    if (!email) {
+      setError("Please enter your email first.");
+      setLoading(false);
+      return;
+    }
+
+    const origin = window.location.origin;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage("Password reset link sent. Please check your email.");
     }
 
     setLoading(false);
@@ -171,22 +203,29 @@ export function LoginForm() {
         {message ? <p className="auth-message">{message}</p> : null}
 
         <button className="btn gold" type="submit" disabled={loading}>
-          {loading
-            ? "Please wait..."
-            : mode === "signin"
-              ? "Sign In"
-              : "Create Account"}
+          {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
         </button>
 
         {mode === "signin" ? (
-          <button
-            className="btn secondary"
-            type="button"
-            onClick={sendMagicLink}
-            disabled={loading || !email}
-          >
-            Send Magic Link Instead
-          </button>
+          <>
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={sendResetPassword}
+              disabled={loading || !email}
+            >
+              Forgot Password?
+            </button>
+
+            <button
+              className="btn secondary"
+              type="button"
+              onClick={sendMagicLink}
+              disabled={loading || !email}
+            >
+              Send Magic Link Instead
+            </button>
+          </>
         ) : null}
       </form>
 
