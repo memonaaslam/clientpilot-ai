@@ -22,22 +22,34 @@ const features = [
 
 const plans = [
   {
+    name: "Free Trial",
+    price: "const plans = [
+  {
+    name: "Starter",",
+    body: "Try ClientPilot AI with basic client memory, demo AI mode, and 5 meeting uploads per month.",
+    link: "/login",
+    button: "Start Free"
+  },
+  {
     name: "Starter",
     price: "$19/month",
     body: "For freelancers and solo service providers.",
-    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/7d490de8-6878-44e1-ae4b-806776fe4a90"
+    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/7d490de8-6878-44e1-ae4b-806776fe4a90",
+    button: "Subscribe"
   },
   {
     name: "Pro",
     price: "$49/month",
     body: "For growing service businesses.",
-    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/379bf850-dce0-4e3c-a727-71e69ce1cf39"
+    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/379bf850-dce0-4e3c-a727-71e69ce1cf39",
+    button: "Subscribe"
   },
   {
     name: "Agency",
     price: "$99/month",
     body: "For teams and agencies managing more clients.",
-    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/43096221-9517-4b43-8b1c-741fef30d87f"
+    link: "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/43096221-9517-4b43-8b1c-741fef30d87f",
+    button: "Subscribe"
   }
 ];
 
@@ -189,7 +201,7 @@ export default function HomePage() {
               <h3>{plan.name}</h3>
               <strong>{plan.price}</strong>
               <p>{plan.body}</p>
-              <a href={plan.link}>Subscribe</a>
+              <a href={plan.link}>{plan.button}</a>
             </article>
           ))}
         </div>
