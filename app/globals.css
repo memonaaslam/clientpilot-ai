@@ -1564,3 +1564,95 @@ pre {
   border: 1px solid var(--border-soft) !important;
 }
 
+
+/* Fix invisible text after light SaaS theme */
+a,
+.card a,
+.client-card a,
+.meeting-card a,
+.proposal-card a,
+.table a,
+table a,
+.side-nav a {
+  color: var(--text-main) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-decoration: none;
+}
+
+a:hover,
+.card a:hover,
+.client-card a:hover,
+.meeting-card a:hover,
+.proposal-card a:hover,
+.table a:hover,
+table a:hover {
+  color: var(--brand) !important;
+}
+
+.client-card h1,
+.client-card h2,
+.client-card h3,
+.client-card h4,
+.client-card strong,
+.client-card p,
+.client-card span,
+.meeting-card h1,
+.meeting-card h2,
+.meeting-card h3,
+.meeting-card h4,
+.meeting-card strong,
+.meeting-card p,
+.meeting-card span,
+.card h1,
+.card h2,
+.card h3,
+.card h4,
+.card strong,
+.card p,
+.card span,
+td,
+th {
+  color: var(--text-main) !important;
+  opacity: 1 !important;
+}
+
+.client-card .muted,
+.card .muted,
+.meeting-card .muted,
+td .muted {
+  color: var(--text-muted) !important;
+}
+
+.pipeline-card,
+.pipeline-column,
+.pipeline-item,
+.lead-card,
+.deal-card {
+  background: #ffffff !important;
+  border: 1px solid var(--border-soft) !important;
+  color: var(--text-main) !important;
+}
+
+.pipeline-card *,
+.pipeline-column *,
+.pipeline-item *,
+.lead-card *,
+.deal-card * {
+  color: inherit;
+}
+
+.pipeline-card a,
+.pipeline-item a,
+.lead-card a,
+.deal-card a {
+  color: var(--text-main) !important;
+}
+
+.pipeline-card a:hover,
+.pipeline-item a:hover,
+.lead-card a:hover,
+.deal-card a:hover {
+  color: var(--brand) !important;
+}
+
