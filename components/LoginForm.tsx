@@ -6,11 +6,20 @@ import { useState } from "react";
 
 function getErrorMessage(error: unknown) {
   if (!error) return "Something went wrong. Please try again.";
-  if (typeof error === "string") return error;
+
+  if (typeof error === "string") {
+    if (error.trim() === "{}") return "Unable to send password reset email. Please check SMTP settings.";
+    return error;
+  }
 
   if (typeof error === "object" && error !== null && "message" in error) {
-    const message = (error as { message?: unknown }).message;
-    if (message) return String(message);
+    const message = String((error as { message?: unknown }).message || "").trim();
+
+    if (!message || message === "{}" || message === "[object Object]") {
+      return "Unable to send password reset email. Please check SMTP settings.";
+    }
+
+    return message;
   }
 
   return "Something went wrong. Please try again.";
@@ -127,7 +136,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="auth-card">
+    <div className="auth-card modern-login-card">
       <div className="auth-tabs">
         <button
           type="button"
@@ -186,26 +195,26 @@ export function LoginForm() {
         {error ? <p className="auth-error">{error}</p> : null}
         {message ? <p className="auth-message">{message}</p> : null}
 
-        <button className="btn gold" type="submit" disabled={loading}>
+        <button className="btn gold full-btn" type="submit" disabled={loading}>
           {loading ? "Please wait..." : mode === "signin" ? "Sign In" : "Create Account"}
         </button>
 
         {mode === "signin" ? (
           <button
-            className="btn secondary"
+            className="forgot-link-btn"
             type="button"
             onClick={sendResetPassword}
             disabled={resetLoading || !email}
           >
-            {resetLoading ? "Sending reset email..." : "Forgot Password?"}
+            {resetLoading ? "Sending reset email..." : "Forgot password?"}
           </button>
         ) : null}
       </form>
 
-      <p className="muted" style={{ fontSize: 13, marginTop: 14 }}>
+      <p className="modern-auth-note">
         {mode === "signin"
-          ? "Login with your email and password."
-          : "Create your workspace account to start using ClientPilot AI."}
+          ? "Login with your workspace email and password."
+          : "Create your ClientPilot AI workspace account."}
       </p>
     </div>
   );
