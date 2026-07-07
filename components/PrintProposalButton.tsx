@@ -3,6 +3,8 @@
 type PrintProposalButtonProps = {
   title: string;
   content: string;
+  brandName?: string | null;
+  logoUrl?: string | null;
 };
 
 function escapeHtml(value: string) {
@@ -14,10 +16,52 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#039;");
 }
 
-export function PrintProposalButton({ title, content }: PrintProposalButtonProps) {
-  function handlePrint() {
+function escapeAttribute(value: string) {
+  return escapeHtml(value).replaceAll("`", "&#096;");
+}
+
+function formatProposal(content: string) {
+  const lines = content.split("\n");
+  let html = "";
+
+  for (const line of lines) {
+    const cleanLine = line.trim();
+
+    if (!cleanLine) {
+      html += "<div class='space'></div>";
+      continue;
+    }
+
+    const isHeading =
+      cleanLine === cleanLine.toUpperCase() &&
+      cleanLine.length > 3 &&
+      cleanLine.length < 60 &&
+      !cleanLine.startsWith("-") &&
+      !cleanLine.match(/^\d+\./);
+
+    if (isHeading) {
+      html += `<h2>${escapeHtml(cleanLine)}</h2>`;
+    } else if (cleanLine.startsWith("-") || cleanLine.match(/^\d+\./)) {
+      html += `<p class='bullet'>${escapeHtml(cleanLine)}</p>`;
+    } else {
+      html += `<p>${escapeHtml(cleanLine)}</p>`;
+    }
+  }
+
+  return html;
+}
+
+export function PrintProposalButton({
+  title,
+  content,
+  brandName,
+  logoUrl
+}: PrintProposalButtonProps) {
+  function printProposal() {
     const safeTitle = escapeHtml(title);
-    const safeContent = escapeHtml(content).replaceAll("\n", "<br />");
+    const safeBrand = escapeHtml(brandName || "ClientPilot AI");
+    const safeLogo = logoUrl ? escapeAttribute(logoUrl) : "";
+    const proposalHtml = formatProposal(content);
 
     const printWindow = window.open("", "_blank", "width=900,height=1100");
 
@@ -32,76 +76,169 @@ export function PrintProposalButton({ title, content }: PrintProposalButtonProps
         <head>
           <title>${safeTitle}</title>
           <style>
+            * {
+              box-sizing: border-box;
+            }
+
             body {
               margin: 0;
-              padding: 40px;
+              padding: 0;
+              background: #f4f1ea;
+              color: #17140f;
               font-family: Arial, sans-serif;
-              color: #171717;
-              background: #f6f2ea;
             }
 
             .page {
-              max-width: 820px;
+              width: 210mm;
+              min-height: 297mm;
               margin: 0 auto;
-              background: white;
-              padding: 46px;
-              border-radius: 22px;
-              box-shadow: 0 25px 80px rgba(0,0,0,.12);
+              padding: 28mm 22mm;
+              background: #fffdf8;
+            }
+
+            .header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              border-bottom: 2px solid #d7b46a;
+              padding-bottom: 22px;
+              margin-bottom: 28px;
             }
 
             .brand {
-              font-size: 13px;
-              letter-spacing: .18em;
+              display: flex;
+              align-items: center;
+              gap: 16px;
+            }
+
+            .logo {
+              max-width: 96px;
+              max-height: 64px;
+              object-fit: contain;
+            }
+
+            .brand-mark {
+              width: 54px;
+              height: 54px;
+              border-radius: 18px;
+              background: #17140f;
+              color: #d7b46a;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 900;
+              letter-spacing: .08em;
+            }
+
+            .brand-name {
+              font-size: 22px;
+              font-weight: 900;
+              letter-spacing: .08em;
               text-transform: uppercase;
-              color: #9c7a24;
+            }
+
+            .doc-type {
+              text-align: right;
+              color: #7c6a3c;
               font-weight: 800;
-              margin-bottom: 16px;
+              letter-spacing: .14em;
+              text-transform: uppercase;
+              font-size: 12px;
             }
 
             h1 {
               font-size: 34px;
-              margin: 0 0 24px;
-              color: #111827;
+              line-height: 1.1;
+              margin: 0 0 26px;
             }
 
-            .content {
+            h2 {
+              margin: 26px 0 10px;
+              padding-top: 14px;
+              border-top: 1px solid #eee2c4;
+              color: #7c5b15;
               font-size: 15px;
-              line-height: 1.75;
+              letter-spacing: .12em;
+              text-transform: uppercase;
+            }
+
+            p {
+              margin: 7px 0;
+              line-height: 1.65;
+              font-size: 14px;
+            }
+
+            .bullet {
+              padding-left: 14px;
+              border-left: 3px solid #d7b46a;
+              margin: 7px 0;
+            }
+
+            .space {
+              height: 6px;
             }
 
             .footer {
               margin-top: 40px;
               padding-top: 18px;
-              border-top: 1px solid #e8dfcf;
-              color: #777;
-              font-size: 12px;
+              border-top: 1px solid #eee2c4;
+              font-size: 11px;
+              color: #7b735f;
+              display: flex;
+              justify-content: space-between;
             }
 
             @media print {
               body {
                 background: white;
-                padding: 0;
               }
 
               .page {
+                margin: 0;
+                width: auto;
+                min-height: auto;
                 box-shadow: none;
-                border-radius: 0;
               }
             }
           </style>
         </head>
+
         <body>
           <div class="page">
-            <div class="brand">ClientPilot AI</div>
+            <div class="header">
+              <div class="brand">
+                ${
+                  safeLogo
+                    ? `<img class="logo" src="${safeLogo}" alt="${safeBrand}" />`
+                    : `<div class="brand-mark">AI</div>`
+                }
+
+                <div>
+                  <div class="brand-name">${safeBrand}</div>
+                  <div style="font-size:12px;color:#7b735f;">Client Proposal</div>
+                </div>
+              </div>
+
+              <div class="doc-type">Proposal Draft</div>
+            </div>
+
             <h1>${safeTitle}</h1>
-            <div class="content">${safeContent}</div>
+
+            <div class="content">
+              ${proposalHtml}
+            </div>
+
             <div class="footer">
-              Generated by ClientPilot AI.
+              <span>${safeBrand}</span>
+              <span>Generated by ClientPilot AI</span>
             </div>
           </div>
+
           <script>
-            window.onload = function() {
-              window.print();
+            window.onload = function () {
+              setTimeout(function () {
+                window.print();
+              }, 300);
             };
           </script>
         </body>
@@ -112,7 +249,7 @@ export function PrintProposalButton({ title, content }: PrintProposalButtonProps
   }
 
   return (
-    <button className="btn gold" type="button" onClick={handlePrint}>
+    <button className="btn secondary" type="button" onClick={printProposal}>
       Print / Save PDF
     </button>
   );
