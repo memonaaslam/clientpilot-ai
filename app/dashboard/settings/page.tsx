@@ -56,7 +56,7 @@ export default async function SettingsPage() {
           <span className="badge">White Label</span>
           <h1 style={{ fontSize: 46 }}>Business Settings</h1>
           <p className="muted">
-            Add your business identity so proposals and follow-ups feel branded.
+            Add your own company identity so proposals and follow-ups are branded for your business.
           </p>
         </div>
 
