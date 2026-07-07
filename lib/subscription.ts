@@ -28,7 +28,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     };
   }
 
-  const activeStatuses = ["active", "trialing"];
+  const activeStatuses = ["active", "trialing", "on_trial"];
   const plan = activeStatuses.includes(data.status)
     ? normalizePlan(data.plan)
     : "free";
