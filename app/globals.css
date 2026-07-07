@@ -1260,3 +1260,24 @@ h1 { font-size: clamp(42px, 6vw, 74px); line-height: .94; letter-spacing: -0.07e
     grid-template-columns: 1fr;
   }
 }
+
+.remember-row-clean {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  user-select: none;
+}
+
+.remember-row-clean input {
+  width: 16px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  padding: 0 !important;
+  accent-color: #e6c36a;
+}
+
+.remember-row-clean span {
+  line-height: 1.4;
+}

@@ -2,7 +2,7 @@
 
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function getErrorMessage(error: unknown) {
   if (!error) return "Something went wrong. Please try again.";
@@ -25,10 +25,31 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const [rememberEmail, setRememberEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const savedRemember = localStorage.getItem("clientpilot_remember_email");
+    const savedEmail = localStorage.getItem("clientpilot_saved_email");
+
+    if (savedRemember === "true" && savedEmail) {
+      setRememberEmail(true);
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  function saveRememberPreference(currentEmail: string) {
+    if (rememberEmail) {
+      localStorage.setItem("clientpilot_remember_email", "true");
+      localStorage.setItem("clientpilot_saved_email", currentEmail);
+    } else {
+      localStorage.removeItem("clientpilot_remember_email");
+      localStorage.removeItem("clientpilot_saved_email");
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,6 +68,8 @@ export function LoginForm() {
         setError("Password must be at least 6 characters.");
         return;
       }
+
+      saveRememberPreference(email);
 
       if (mode === "signup") {
         const origin = window.location.origin;
@@ -107,6 +130,8 @@ export function LoginForm() {
         return;
       }
 
+      saveRememberPreference(email);
+
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: {
@@ -163,6 +188,7 @@ export function LoginForm() {
           <input
             type="text"
             placeholder="Full name"
+            autoComplete="name"
             value={name}
             onChange={(event) => setName(event.target.value)}
           />
@@ -171,6 +197,7 @@ export function LoginForm() {
         <input
           type="email"
           placeholder="Email address"
+          autoComplete="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           required
@@ -179,10 +206,20 @@ export function LoginForm() {
         <input
           type="password"
           placeholder="Password"
+          autoComplete={mode === "signin" ? "current-password" : "new-password"}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           required
         />
+
+        <label className="remember-row-clean">
+          <input
+            type="checkbox"
+            checked={rememberEmail}
+            onChange={(event) => setRememberEmail(event.target.checked)}
+          />
+          <span>Remember my email on this device</span>
+        </label>
 
         {error ? <p className="auth-error">{error}</p> : null}
         {message ? <p className="auth-message">{message}</p> : null}
