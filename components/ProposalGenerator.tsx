@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 
@@ -24,22 +24,15 @@ function clean(value?: string | null) {
 }
 
 function brandName(value?: string | null) {
-  return value && value.trim() ? value.trim() : "ClientPilot AI";
+  return value && value.trim() ? value.trim() : "Memona Aslam";
 }
 
 function buildProposal(props: ProposalGeneratorProps) {
   const brand = brandName(props.businessName);
-  const logo = props.logoText?.trim() || brand;
   const currency = props.currency || "AED";
-  const whatsappSignature = props.whatsappSignature || `Regards, ${brand}`;
-  const emailSignature = props.emailSignature || `Best regards,\n${brand}`;
-  const footer =
-    props.proposalFooter ||
-    "This proposal is a draft and can be updated after final scope confirmation.";
 
-  return `${logo}
+  return `${props.clientName} - ${props.meetingTitle} Software developer
 PROPOSAL DRAFT
-
 Prepared By: ${brand}
 Client: ${props.clientName}
 Company: ${clean(props.company)}
@@ -47,6 +40,8 @@ Phone: ${clean(props.phone)}
 Email: ${clean(props.email)}
 Meeting: ${props.meetingTitle}
 Currency: ${currency}
+Budget/pricing: Budget was not clearly confirmed in the notes.
+Timeline: Timeline was not clearly confirmed in the notes.
 
 PROJECT UNDERSTANDING
 ${props.summary || "The client requirement was discussed during the meeting. The next step is to prepare a formal proposal based on the client's needs, budget, and preferred timeline."}
@@ -69,15 +64,7 @@ RECOMMENDED NEXT STEP
 Schedule a follow-up call or site visit, confirm the final scope, and send the official quotation for approval.
 
 CLIENT FOLLOW-UP MESSAGE
-Hi ${props.clientName}, thank you for your time. Based on our discussion, we have prepared a proposal draft covering your requirements and next steps. Please review it and let us know if you would like us to proceed with the official quotation.
-
-${whatsappSignature}
-
-EMAIL SIGNATURE
-${emailSignature}
-
-FOOTER
-${footer}`;
+Hi ${props.clientName}, thank you for your time. Based on our discussion, we have prepared a proposal draft covering your requirements and next steps. Please review it and let us know if you would like us to proceed with the official quotation.`;
 }
 
 export function ProposalGenerator(props: ProposalGeneratorProps) {
