@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function SalesLoginForm() {
-  const router = useRouter();
-
   const [staffId, setStaffId] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,20 +21,21 @@ export function SalesLoginForm() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          staff_id: staffId,
-          pin
+          staff_id: staffId.trim(),
+          pin: pin.trim()
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Unable to login.");
+        setError(data.error || "Invalid Staff ID or PIN.");
         return;
       }
 
-      router.push(data.redirectTo || "/sales/dashboard");
-      router.refresh();
+      window.location.href = data.redirectTo || "/sales/dashboard";
+    } catch {
+      setError("Login failed. Please check Staff ID, PIN, and deployment.");
     } finally {
       setLoading(false);
     }
@@ -50,7 +48,6 @@ export function SalesLoginForm() {
         <input
           value={staffId}
           onChange={(event) => setStaffId(event.target.value)}
-          placeholder="CP-123456"
           required
         />
       </label>
@@ -60,7 +57,6 @@ export function SalesLoginForm() {
         <input
           value={pin}
           onChange={(event) => setPin(event.target.value)}
-          placeholder="4-digit PIN"
           type="password"
           required
         />
@@ -69,7 +65,7 @@ export function SalesLoginForm() {
       {error ? <p className="auth-error">{error}</p> : null}
 
       <button disabled={loading}>
-        {loading ? "Signing in..." : "Open Sales Workspace"}
+        {loading ? "Opening..." : "Open Sales Workspace"}
       </button>
     </form>
   );
