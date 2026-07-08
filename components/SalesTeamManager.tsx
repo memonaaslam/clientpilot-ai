@@ -190,7 +190,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Example: Swaati Sales"
+              
               required
               disabled={!isAgency || activeCount >= 3}
             />
@@ -201,7 +201,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
             <input
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="sales@example.com"
+              
               disabled={!isAgency || activeCount >= 3}
             />
           </label>
@@ -211,7 +211,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
             <input
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="+971500000000"
+              
               disabled={!isAgency || activeCount >= 3}
             />
           </label>
@@ -273,7 +273,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
                   Staff ID: <strong>{salesUser.staff_id}</strong>
                 </p>
                 <small>
-                  {salesUser.email ? `${salesUser.email} · ` : ""}
+                  {salesUser.email ? `${salesUser.email} Â· ` : ""}
                   {formatDate(salesUser.created_at)}
                 </small>
               </div>
