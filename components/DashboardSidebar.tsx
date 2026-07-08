@@ -10,17 +10,17 @@ type DashboardSidebarProps = {
 };
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "DB" },
-  { href: "/dashboard/clients", label: "Clients", icon: "CL" },
-  { href: "/dashboard/pipeline", label: "Pipeline", icon: "PL" },
-  { href: "/dashboard/upload", label: "Upload Meeting", icon: "UP" },
-  { href: "/dashboard/meetings", label: "Meetings", icon: "MT" },
-  { href: "/dashboard/tasks", label: "Tasks", icon: "TK" },
-  { href: "/dashboard/reminders", label: "Reminders", icon: "RM" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: "PR" },
-  { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "RB" },
-  { href: "/dashboard/settings", label: "Settings", icon: "ST" },
-  { href: "/dashboard/subscription", label: "Subscription", icon: "SUB" }
+  { href: "/dashboard", label: "Dashboard", icon: "D" },
+  { href: "/dashboard/clients", label: "Clients", icon: "C" },
+  { href: "/dashboard/pipeline", label: "Pipeline", icon: "P" },
+  { href: "/dashboard/upload", label: "Upload Meeting", icon: "U" },
+  { href: "/dashboard/meetings", label: "Meetings", icon: "M" },
+  { href: "/dashboard/tasks", label: "Tasks", icon: "T" },
+  { href: "/dashboard/reminders", label: "Reminders", icon: "R" },
+  { href: "/dashboard/proposals", label: "Proposals", icon: "P" },
+  { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "B" },
+  { href: "/dashboard/settings", label: "Settings", icon: "S" },
+  { href: "/dashboard/subscription", label: "Subscription", icon: "$" }
 ];
 
 const legalLinks = [
@@ -42,23 +42,28 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
   const pathname = usePathname();
 
   return (
-    <aside className="sidebar sidebar-premium">
-      <div className="sidebar-orb one" />
-      <div className="sidebar-orb two" />
-
+    <aside className="sidebar sidebar-premium sidebar-business">
       <div className="sidebar-inner">
-        <div className="sidebar-brand-block">
-          <Link href="/dashboard" className="side-title side-title-premium">
-            <span className="brand-mark">CP</span>
-            <strong>
-              ClientPilot<span>AI</span>
-            </strong>
-          </Link>
+        <div className="sidebar-brand-block sidebar-brand-business">
+          <Link href="/dashboard" className="side-title-business">
+            <span className="brand-emblem">
+              <span>CP</span>
+            </span>
 
-          <p>Smart CRM for meetings, proposals, tasks, and follow-ups.</p>
+            <span className="brand-word">
+              <strong>ClientPilot</strong>
+              <small>AI Workspace</small>
+            </span>
+          </Link>
         </div>
 
-        <nav className="side-nav side-nav-premium" aria-label="Dashboard navigation">
+        <div className="sidebar-command-card">
+          <span>Today</span>
+          <strong>Follow-up command center</strong>
+          <p>Open reminders, tasks, and proposals before leads go cold.</p>
+        </div>
+
+        <nav className="side-nav-business" aria-label="Dashboard navigation">
           {navItems.map((item, index) => {
             const active = isActivePath(pathname, item.href);
 
@@ -66,19 +71,18 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
               <Link
                 href={item.href}
                 key={item.href}
-                className={`nav-item-premium ${active ? "active" : ""}`}
-                style={{ animationDelay: `${index * 45}ms` }}
+                className={`business-nav-item ${active ? "active" : ""}`}
+                style={{ animationDelay: `${index * 35}ms` }}
               >
-                <span className="nav-icon">{item.icon}</span>
-                <span className="nav-label">{item.label}</span>
-                <span className="nav-glow" />
+                <span className="business-nav-icon">{item.icon}</span>
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <div className="sidebar-bottom-panel">
-          <div className="account-mini-card">
+        <div className="sidebar-bottom-business">
+          <div className="account-mini-card business-account">
             <span className="account-avatar">
               {userEmail ? userEmail.slice(0, 1).toUpperCase() : "G"}
             </span>
