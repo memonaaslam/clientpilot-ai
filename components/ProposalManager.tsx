@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 
 type ClientOption = {
   id: string;
@@ -174,16 +173,32 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     }
   }
 
-  async function moveToRecycle(id: string) {
-    const confirmDelete = window.confirm("Move this proposal to Recycle Bin?");
+  async function moveToRecycle(proposal: Proposal) {
+    const confirmDelete = window.confirm("Delete this proposal from Active Proposals?");
 
     if (!confirmDelete) return;
 
-    await fetch(`/api/proposals/${id}`, {
-      method: "DELETE"
+    setMessage("");
+
+    const response = await fetch(`/api/proposals/${proposal.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        deleted: true
+      })
     });
 
-    await loadProposals();
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Unable to delete proposal.");
+      return;
+    }
+
+    setProposals((current) => current.filter((item) => item.id !== proposal.id));
+    setMessage("Proposal moved to Recycle Bin.");
   }
 
   return (
@@ -194,7 +209,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
             <span className="badge">{editingId ? "Edit Proposal" : "New Proposal"}</span>
             <h2>{editingId ? "Update proposal" : "Create professional proposal"}</h2>
             <p className="muted">
-              Use a clean business proposal format instead of unprofessional footer/signature placeholders.
+              Create a clean, editable client proposal with professional wording.
             </p>
           </div>
 
@@ -259,7 +274,11 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
             />
           </label>
 
-          {message ? <p className={message.includes("Unable") ? "auth-error" : "auth-message"}>{message}</p> : null}
+          {message ? (
+            <p className={message.includes("Unable") ? "auth-error" : "auth-message"}>
+              {message}
+            </p>
+          ) : null}
 
           <button className="btn gold" disabled={saving}>
             {saving ? "Saving..." : editingId ? "Save Changes" : "Create Proposal"}
@@ -273,17 +292,13 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
             <span className="badge">Proposal Library</span>
             <h2>Active proposals</h2>
           </div>
-
-          <Link className="btn secondary" href="/dashboard/recycle-bin">
-            Recycle Bin
-          </Link>
         </div>
 
         {loading ? <p className="muted">Loading proposals...</p> : null}
 
         {!loading && proposals.length === 0 ? (
           <div className="empty-state mini">
-            <h2>No proposals yet</h2>
+            <h2>No active proposals</h2>
             <p className="muted">Create your first professional proposal above.</p>
           </div>
         ) : null}
@@ -302,8 +317,10 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
               </div>
 
               <div className="proposal-row-actions">
-                <button onClick={() => editProposal(proposal)}>Edit</button>
-                <button className="danger" onClick={() => moveToRecycle(proposal.id)}>
+                <button type="button" onClick={() => editProposal(proposal)}>
+                  Edit
+                </button>
+                <button type="button" className="danger" onClick={() => moveToRecycle(proposal)}>
                   Delete
                 </button>
               </div>
