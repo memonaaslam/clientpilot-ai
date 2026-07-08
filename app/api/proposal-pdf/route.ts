@@ -10,11 +10,35 @@ const SECTION_MARKERS = [
   "PROPOSED SCOPE",
   "EXPECTED DELIVERABLES",
   "PROJECT TIMELINE",
+  "TIMELINE",
+  "BUDGET",
+  "BUDGET/PRICING",
+  "PRICING",
   "INVESTMENT",
   "NEXT STEPS",
-  "PROJECT OVERVIEW",
-  "SCOPE OF WORK",
-  "RECOMMENDED SOLUTION"
+  "EMAIL SIGNATURE",
+  "FOOTER",
+  "PROPOSAL VALIDITY"
+];
+
+const SKIP_SECTIONS = [
+  "EMAIL SIGNATURE",
+  "FOOTER",
+  "PROPOSAL VALIDITY",
+  "INVESTMENT"
+];
+
+const META_LABELS_TO_SKIP_IN_BODY = [
+  "prepared by",
+  "client",
+  "company",
+  "phone",
+  "email",
+  "meeting",
+  "currency",
+  "budget",
+  "budget/pricing",
+  "timeline"
 ];
 
 function cleanText(value: unknown) {
@@ -24,10 +48,22 @@ function cleanText(value: unknown) {
     .trim();
 }
 
-function formatMoney(value: unknown) {
-  const amount = Number(value || 0);
-  if (!amount) return "To be confirmed";
-  return `$${amount.toLocaleString()}`;
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join("") || "CO";
+}
+
+function isSectionHeading(line: string) {
+  const trimmed = line.trim();
+  if (!trimmed) return false;
+  if (trimmed.length > 80) return false;
+  if (/^\d+\./.test(trimmed)) return false;
+
+  return SECTION_MARKERS.includes(trimmed.toUpperCase()) || /^[A-Z0-9 &/()\-]+$/.test(trimmed);
 }
 
 function parseProposalContent(content: string, fallbackTitle: string, fallbackClient: string) {
@@ -44,7 +80,7 @@ function parseProposalContent(content: string, fallbackTitle: string, fallbackCl
   const bodyLines = firstSectionIndex >= 0 ? lines.slice(firstSectionIndex) : lines;
 
   const titleLine =
-    headerLines.find((line) => !line.includes(":") && !line.toUpperCase().startsWith("PROPOSAL")) ||
+    headerLines.find((line) => !line.includes(":") && !line.toUpperCase().includes("PROPOSAL")) ||
     fallbackTitle ||
     "Proposal";
 
@@ -52,7 +88,7 @@ function parseProposalContent(content: string, fallbackTitle: string, fallbackCl
     headerLines.find((line) => line.toUpperCase().includes("PROPOSAL")) ||
     "PROPOSAL DRAFT";
 
-  const meta: { label: string; value: string }[] = [];
+  const metaMap = new Map<string, string>();
 
   headerLines.forEach((line) => {
     const splitIndex = line.indexOf(":");
@@ -62,28 +98,74 @@ function parseProposalContent(content: string, fallbackTitle: string, fallbackCl
       const value = line.slice(splitIndex + 1).trim();
 
       if (label && value) {
-        meta.push({ label, value });
+        metaMap.set(label.toLowerCase(), value);
       }
     }
   });
 
-  if (!meta.some((item) => item.label.toLowerCase() === "client") && fallbackClient) {
-    meta.push({ label: "Client", value: fallbackClient });
+  if (!metaMap.has("client") && fallbackClient) {
+    metaMap.set("client", fallbackClient);
   }
+
+  if (!metaMap.has("budget/pricing")) {
+    metaMap.set("budget/pricing", "Budget was not clearly confirmed in the notes.");
+  }
+
+  if (!metaMap.has("timeline")) {
+    metaMap.set("timeline", "Timeline was not clearly confirmed in the notes.");
+  }
+
+  const preferredOrder = [
+    "prepared by",
+    "client",
+    "company",
+    "phone",
+    "email",
+    "meeting",
+    "currency",
+    "budget/pricing",
+    "timeline"
+  ];
+
+  const labelNames: Record<string, string> = {
+    "prepared by": "Prepared By",
+    client: "Client",
+    company: "Company",
+    phone: "Phone",
+    email: "Email",
+    meeting: "Meeting",
+    currency: "Currency",
+    "budget/pricing": "Budget/pricing",
+    timeline: "Timeline"
+  };
+
+  const meta = preferredOrder
+    .filter((key) => metaMap.has(key))
+    .map((key) => ({
+      label: labelNames[key] || key,
+      value: metaMap.get(key) || ""
+    }));
 
   return {
     titleLine,
     proposalLabel,
     meta,
+    companyName: metaMap.get("company") || "Company",
     body: bodyLines.join("\n")
   };
 }
 
-function addPageNumber(doc: jsPDF, page: number) {
-  doc.setFont("helvetica", "normal");
+function addBottomBrand(doc: jsPDF, page: number) {
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
+  doc.setTextColor(113, 75, 103);
+  doc.text("ClientPilot AI", 105, 283, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
   doc.setTextColor(140, 132, 148);
-  doc.text(`Page ${page}`, 182, 287);
+  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 105, 288, { align: "center" });
+  doc.text(`Page ${page}`, 185, 288);
 }
 
 function addWrappedText(
@@ -100,9 +182,9 @@ function addWrappedText(
 }
 
 function addPageIfNeeded(doc: jsPDF, y: number, pageRef: { page: number }, neededSpace = 28) {
-  if (y + neededSpace < 262) return y;
+  if (y + neededSpace < 260) return y;
 
-  addPageNumber(doc, pageRef.page);
+  addBottomBrand(doc, pageRef.page);
   doc.addPage();
   pageRef.page += 1;
 
@@ -124,12 +206,23 @@ function addSectionTitle(doc: jsPDF, title: string, y: number) {
   return y + 18;
 }
 
-function isSectionHeading(line: string) {
-  const trimmed = line.trim();
-  if (!trimmed) return false;
-  if (trimmed.length > 70) return false;
-  if (/^\d+\./.test(trimmed)) return false;
-  return SECTION_MARKERS.includes(trimmed.toUpperCase()) || /^[A-Z0-9 &/()\-]+$/.test(trimmed);
+function shouldSkipLine(line: string) {
+  const lowered = line.toLowerCase().trim();
+
+  if (lowered.includes("this proposal is valid")) return true;
+  if (lowered === "best regards,") return true;
+  if (lowered === "sales team") return true;
+  if (lowered.includes("final investment may vary")) return true;
+  if (lowered === "to be confirmed") return true;
+
+  const splitIndex = lowered.indexOf(":");
+
+  if (splitIndex > 0) {
+    const label = lowered.slice(0, splitIndex).trim();
+    return META_LABELS_TO_SKIP_IN_BODY.includes(label);
+  }
+
+  return false;
 }
 
 function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page: number }) {
@@ -140,27 +233,42 @@ function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page
 
   if (lines.length === 0) {
     y = addSectionTitle(doc, "Project Understanding", y);
+
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.setTextColor(58, 50, 64);
 
     return addWrappedText(
       doc,
-      "This proposal outlines the recommended solution, scope of work, timeline, investment, and next steps required to move forward professionally.",
+      "This proposal outlines the recommended solution, scope of work, timeline, and next steps required to move forward professionally.",
       24,
       y,
       160
     );
   }
 
+  let skipMode = false;
+
   for (const line of lines) {
-    y = addPageIfNeeded(doc, y, pageRef, 22);
+    const upper = line.toUpperCase();
 
     if (isSectionHeading(line)) {
+      if (SKIP_SECTIONS.includes(upper)) {
+        skipMode = true;
+        continue;
+      }
+
+      skipMode = false;
+      y = addPageIfNeeded(doc, y, pageRef, 22);
       y += 4;
       y = addSectionTitle(doc, line, y);
       continue;
     }
+
+    if (skipMode) continue;
+    if (shouldSkipLine(line)) continue;
+
+    y = addPageIfNeeded(doc, y, pageRef, 18);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
@@ -173,13 +281,18 @@ function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page
   return y;
 }
 
+function formatAmount(amountValue: unknown, currency: string) {
+  const amount = Number(amountValue || 0);
+  if (!amount) return "";
+  return `${currency || "AED"} ${amount.toLocaleString()}`;
+}
+
 function createProposalPdf(proposal: any) {
   const doc = new jsPDF("p", "mm", "a4");
   const pageRef = { page: 1 };
 
   const clientName = proposal.client_name || "Client";
   const fallbackTitle = proposal.title || "Proposal";
-  const amount = formatMoney(proposal.amount);
 
   const parsed = parseProposalContent(
     cleanText(proposal.content),
@@ -187,41 +300,53 @@ function createProposalPdf(proposal: any) {
     clientName
   );
 
+  const currencyMeta = parsed.meta.find((item) => item.label.toLowerCase() === "currency")?.value || "AED";
+  const amount = formatAmount(proposal.amount, currencyMeta);
+
+  // Clean company header
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 210, 297, "F");
+
   doc.setFillColor(113, 75, 103);
-  doc.rect(0, 0, 210, 46, "F");
+  doc.roundedRect(20, 18, 18, 18, 4, 4, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("ClientPilot AI", 20, 22);
-
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 20, 31);
+  doc.text(getInitials(parsed.companyName), 29, 30, { align: "center" });
 
-  doc.setFillColor(255, 255, 255);
-  doc.roundedRect(20, 36, 170, 74, 6, 6, "F");
+  doc.setTextColor(28, 19, 36);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(17);
+  doc.text(parsed.companyName, 44, 29);
+
+  doc.setDrawColor(235, 228, 235);
+  doc.line(20, 44, 190, 44);
+
+  // Proposal header card
+  doc.setFillColor(250, 247, 250);
+  doc.roundedRect(20, 54, 170, 82, 6, 6, "F");
 
   doc.setTextColor(28, 19, 36);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  const titleLines = doc.splitTextToSize(parsed.titleLine, 154);
-  doc.text(titleLines, 28, 52);
 
-  let cardY = 52 + titleLines.length * 6.5 + 5;
+  const titleLines = doc.splitTextToSize(parsed.titleLine, 154);
+  doc.text(titleLines, 28, 70);
+
+  let cardY = 70 + titleLines.length * 6.5 + 5;
 
   doc.setTextColor(113, 75, 103);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.text(parsed.proposalLabel.toUpperCase(), 28, cardY);
 
-  cardY += 9;
+  cardY += 10;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(75, 65, 84);
 
-  parsed.meta.slice(0, 8).forEach((item, index) => {
+  parsed.meta.slice(0, 9).forEach((item, index) => {
     const x = index % 2 === 0 ? 28 : 108;
     const rowY = cardY + Math.floor(index / 2) * 8;
 
@@ -229,33 +354,32 @@ function createProposalPdf(proposal: any) {
     doc.text(`${item.label}:`, x, rowY);
 
     doc.setFont("helvetica", "normal");
-    const value = doc.splitTextToSize(item.value, 48)[0] || "";
-    doc.text(value, x + 22, rowY);
+    const value = doc.splitTextToSize(item.value, 50)[0] || "";
+    doc.text(value, x + 24, rowY);
   });
 
-  let y = 128;
+  let y = 154;
 
   y = renderProposalBody(doc, parsed.body, y, pageRef);
 
-  y += 12;
-  y = addPageIfNeeded(doc, y, pageRef, 50);
+  if (amount) {
+    y += 12;
+    y = addPageIfNeeded(doc, y, pageRef, 50);
 
-  y = addSectionTitle(doc, "Investment", y);
+    y = addSectionTitle(doc, "Investment", y);
 
-  doc.setFillColor(252, 250, 252);
-  doc.roundedRect(24, y, 160, 30, 5, 5, "F");
+    doc.setFillColor(252, 250, 252);
+    doc.roundedRect(24, y, 160, 30, 5, 5, "F");
 
-  doc.setTextColor(113, 75, 103);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.text(amount, 32, y + 18);
+    doc.setTextColor(113, 75, 103);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    doc.text(amount, 32, y + 18);
 
-  doc.setTextColor(96, 86, 104);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("Final investment may vary based on confirmed requirements.", 86, y + 18);
+    y += 48;
+  }
 
-  y += 52;
+  y += 16;
   y = addPageIfNeeded(doc, y, pageRef, 34);
 
   doc.setDrawColor(225, 215, 225);
@@ -267,7 +391,7 @@ function createProposalPdf(proposal: any) {
   doc.text("Prepared By", 24, y + 7);
   doc.text("Client Approval", 118, y + 7);
 
-  addPageNumber(doc, pageRef.page);
+  addBottomBrand(doc, pageRef.page);
 
   return doc.output("arraybuffer");
 }
