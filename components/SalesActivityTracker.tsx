@@ -1,8 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
 type ActivityRow = {
   id: string;
   staff_id: string;
@@ -30,11 +28,6 @@ type Totals = {
   followUpsDue: number;
 };
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
-
 export function SalesActivityTracker() {
   const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [totals, setTotals] = useState<Totals | null>(null);
@@ -46,18 +39,7 @@ export function SalesActivityTracker() {
     setError("");
 
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-
-      if (!token) {
-        setError("Please login again as owner.");
-        return;
-      }
-
       const response = await fetch("/api/sales-activity", {
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
         cache: "no-store"
       });
 
@@ -166,3 +148,4 @@ export function SalesActivityTracker() {
     </div>
   );
 }
+

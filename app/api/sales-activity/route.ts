@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/sales-session";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 
@@ -29,30 +30,23 @@ async function safeSelect(
   return (data || []) as unknown as BasicRow[];
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const authHeader = request.headers.get("authorization") || "";
-    const token = authHeader.replace("Bearer ", "").trim();
+    const authSupabase = await createSupabaseServerClient();
 
-    if (!token) {
+    const {
+      data: { user }
+    } = await authSupabase.auth.getUser();
+
+    if (!user) {
       return NextResponse.json(
-        { error: "Login session required." },
+        { error: "Owner login required." },
         { status: 401 }
       );
     }
 
+    const ownerId = user.id;
     const supabase = createSupabaseAdminClient();
-
-    const { data: authData, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !authData.user) {
-      return NextResponse.json(
-        { error: "Invalid login session." },
-        { status: 401 }
-      );
-    }
-
-    const ownerId = authData.user.id;
 
     const { data: salesUsers, error: salesError } = await supabase
       .from("sales_users")
@@ -76,8 +70,8 @@ export async function GET(request: Request) {
     const nextSevenDays = new Date();
     nextSevenDays.setDate(now.getDate() + 7);
 
-    const activity = (salesUsers || []).map((user) => {
-      const salesUserId = String(user.id);
+    const activity = (salesUsers || []).map((salesUser) => {
+      const salesUserId = String(salesUser.id);
 
       const userClients = clients.filter((item) => item.sales_user_id === salesUserId);
       const userMeetings = meetings.filter((item) => item.sales_user_id === salesUserId);
@@ -103,15 +97,13 @@ export async function GET(request: Request) {
         userProposals.length * 10 +
         completedTasks * 6;
 
-      const activityScore = Math.min(100, rawScore);
-
       return {
-        id: user.id,
-        staff_id: user.staff_id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        status: user.status,
+        id: salesUser.id,
+        staff_id: salesUser.staff_id,
+        name: salesUser.name,
+        email: salesUser.email,
+        phone: salesUser.phone,
+        status: salesUser.status,
         clientsAdded: userClients.length,
         meetingsAdded: userMeetings.length,
         tasksCreated: userTasks.length,
@@ -119,7 +111,7 @@ export async function GET(request: Request) {
         proposalsCreated: userProposals.length,
         followUpsDue,
         completedTasks,
-        activityScore
+        activityScore: Math.min(100, rawScore)
       };
     });
 
@@ -143,4 +135,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
