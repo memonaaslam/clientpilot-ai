@@ -3420,3 +3420,41 @@ input[type="file"]::file-selector-button {
   color: inherit !important;
 }
 
+
+/* Professional Typography Upgrade */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+body {
+  font-family: "Inter", Arial, sans-serif !important;
+}
+
+h1,
+h2,
+.cp-hero-copy h1,
+.cp-section-head h2,
+.page-hero h1 {
+  font-family: "Times New Roman", Times, serif !important;
+  letter-spacing: -.045em !important;
+}
+
+h3,
+.badge,
+.cp-eyebrow,
+.hero-mini-card span,
+.side-title-premium strong,
+.nav-label {
+  font-family: "Cinzel", serif !important;
+  letter-spacing: .01em !important;
+}
+
+p,
+span,
+a,
+button,
+input,
+textarea,
+select,
+li {
+  font-family: "Inter", Arial, sans-serif;
+}
+

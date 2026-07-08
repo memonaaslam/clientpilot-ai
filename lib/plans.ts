@@ -1,90 +1,83 @@
-export type PlanId = "free" | "starter" | "pro" | "agency";
+export type PlanKey = "free" | "starter" | "pro" | "agency";
 
 export type PlanConfig = {
-  id: PlanId;
+  key: PlanKey;
   name: string;
-  priceLabel: string;
-  monthlyMeetingLimit: number;
-  userLimit: number;
+  price: string;
+  meetingsPerMonth: number;
+  users: number;
+  includedSalesUsers: number;
   features: string[];
-  stripePriceEnv?: string;
 };
 
-export const PLANS: Record<PlanId, PlanConfig> = {
+export const PLANS: Record<PlanKey, PlanConfig> = {
   free: {
-    id: "free",
-    name: "Free Trial",
-    priceLabel: "$0",
-    monthlyMeetingLimit: 5,
-    userLimit: 1,
+    key: "free",
+    name: "Free",
+    price: "$0",
+    meetingsPerMonth: 5,
+    users: 1,
+    includedSalesUsers: 0,
     features: [
-      "5 meeting uploads per month",
-      "Basic client memory",
-      "Free Smart Mode",
-      "Proposal generator"
+      "5 smart meetings per month",
+      "Client memory CRM",
+      "Smart summaries",
+      "Tasks and reminders",
+      "Proposal builder"
     ]
   },
   starter: {
-    id: "starter",
+    key: "starter",
     name: "Starter",
-    priceLabel: "$19/month",
-    monthlyMeetingLimit: 20,
-    userLimit: 1,
-    stripePriceEnv: "STRIPE_STARTER_PRICE_ID",
+    price: "$19/month",
+    meetingsPerMonth: 20,
+    users: 1,
+    includedSalesUsers: 0,
     features: [
-      "20 meeting uploads per month",
-      "Client memory",
-      "Smart summaries",
-      "Proposal generator",
-      "White-label settings"
+      "20 smart meetings per month",
+      "Client memory CRM",
+      "Proposal builder",
+      "Follow-up reminders",
+      "Google Calendar reminder links"
     ]
   },
   pro: {
-    id: "pro",
+    key: "pro",
     name: "Pro",
-    priceLabel: "$49/month",
-    monthlyMeetingLimit: 100,
-    userLimit: 3,
-    stripePriceEnv: "STRIPE_PRO_PRICE_ID",
+    price: "$39/month",
+    meetingsPerMonth: 80,
+    users: 1,
+    includedSalesUsers: 0,
     features: [
-      "100 meeting uploads per month",
-      "Advanced client memory",
-      "Smart summaries",
-      "Premium proposal PDF",
-      "Custom logo branding"
+      "80 smart meetings per month",
+      "Lead scoring",
+      "Lost lead rescue",
+      "Proposal follow-up workflow",
+      "Priority workspace"
     ]
   },
   agency: {
-    id: "agency",
+    key: "agency",
     name: "Agency",
-    priceLabel: "$99/month",
-    monthlyMeetingLimit: 500,
-    userLimit: 10,
-    stripePriceEnv: "STRIPE_AGENCY_PRICE_ID",
+    price: "$80/month",
+    meetingsPerMonth: 300,
+    users: 4,
+    includedSalesUsers: 3,
     features: [
-      "500 meeting uploads per month",
-      "Agency-level workspace",
-      "Team-ready limits",
-      "White-label proposals",
-      "Priority SaaS setup"
+      "300 smart meetings per month",
+      "Owner workspace",
+      "3 included sales users",
+      "Sales team activity tracking",
+      "Agency follow-up command center",
+      "Custom team add-on available"
     ]
   }
 };
 
-export function normalizePlan(plan: string | null | undefined): PlanId {
+export function getPlanConfig(plan?: string | null) {
   if (plan === "starter" || plan === "pro" || plan === "agency") {
-    return plan;
+    return PLANS[plan];
   }
 
-  return "free";
-}
-
-export function getStripePriceId(plan: PlanId) {
-  const config = PLANS[plan];
-
-  if (!config.stripePriceEnv) {
-    return null;
-  }
-
-  return process.env[config.stripePriceEnv] || null;
+  return PLANS.free;
 }
