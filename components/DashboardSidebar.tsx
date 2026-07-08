@@ -23,6 +23,7 @@ const navItems = [
   { href: "/dashboard/sales-activity", label: "Sales Activity", icon: "SA" },
   { href: "/sales/login", label: "Sales Login", icon: "SL" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "P" },
+  { href: "/dashboard/proposal-pdf", label: "Proposal PDF", icon: "PDF" },
   { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "B" },
   { href: "/dashboard/settings", label: "Settings", icon: "S" },
   { href: "/dashboard/subscription", label: "Subscription", icon: "$" }
@@ -118,5 +119,6 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
     </aside>
   );
 }
+
 
 
