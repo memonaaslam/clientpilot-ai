@@ -5878,3 +5878,130 @@ li {
     grid-template-columns: 1fr;
   }
 }
+
+/* One-click Follow-up Assistant */
+.followup-page {
+  display: grid;
+  gap: 24px;
+}
+
+.followup-grid {
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.followup-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 30px;
+  padding: 26px;
+  box-shadow: 0 16px 50px rgba(16,24,40,.08);
+}
+
+.followup-card h2 {
+  margin: 0 0 18px;
+  color: var(--text-main);
+  font-size: 30px;
+}
+
+.followup-form {
+  display: grid;
+  gap: 14px;
+}
+
+.followup-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.followup-form select,
+.followup-form textarea {
+  width: 100%;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 16px;
+  background: #ffffff !important;
+  color: var(--text-main) !important;
+  padding: 13px 14px;
+  font-size: 15px;
+  outline: none;
+}
+
+.followup-form textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+.followup-form button,
+.followup-actions button,
+.followup-actions a {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #ffffff !important;
+  font-weight: 950;
+  cursor: pointer;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.followup-output-head p {
+  margin: -8px 0 18px;
+  color: var(--text-muted);
+}
+
+.followup-preview {
+  display: grid;
+  gap: 16px;
+}
+
+.followup-preview span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.followup-preview strong {
+  display: block;
+  color: var(--text-main);
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+}
+
+.followup-preview pre {
+  white-space: pre-wrap;
+  margin: 0;
+  min-height: 240px;
+  padding: 18px;
+  border-radius: 18px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+  color: var(--text-main);
+  line-height: 1.65;
+  font-family: inherit;
+}
+
+.followup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 950px) {
+  .followup-grid {
+    grid-template-columns: 1fr;
+  }
+}

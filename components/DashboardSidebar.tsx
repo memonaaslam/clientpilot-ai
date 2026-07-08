@@ -17,6 +17,7 @@ const navItems = [
   { href: "/dashboard/meetings", label: "Meetings", icon: "M" },
   { href: "/dashboard/tasks", label: "Tasks", icon: "T" },
   { href: "/dashboard/reminders", label: "Reminders", icon: "R" },
+  { href: "/dashboard/follow-ups", label: "Follow-ups", icon: "F" },
   { href: "/dashboard/sales-team", label: "Sales Team", icon: "A" },
   { href: "/dashboard/sales-activity", label: "Sales Activity", icon: "SA" },
   { href: "/sales/login", label: "Sales Login", icon: "SL" },
@@ -116,3 +117,4 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
     </aside>
   );
 }
+
