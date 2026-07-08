@@ -10,16 +10,17 @@ type DashboardSidebarProps = {
 };
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: "Ã¢Å’â€š" },
-  { href: "/dashboard/clients", label: "Clients", icon: "Ã¢â€”â€°" },
-  { href: "/dashboard/pipeline", label: "Pipeline", icon: "Ã¢â€”â€ " },
-  { href: "/dashboard/upload", label: "Upload Meeting", icon: "Ã¢â€”Å½" },
-  { href: "/dashboard/meetings", label: "Meetings", icon: "Ã¢â€”Å’" },
-  { href: "/dashboard/tasks", label: "Tasks", icon: "Ã¢Å“â€œ" },
-  { href: "/dashboard/reminders", label: "Reminders", icon: "Ã¢ÂÂ±" },
-  { href: "/dashboard/proposals", label: "Proposals", icon: "Ã¢Å“Â¦" },
-  { href: "/dashboard/settings", label: "Settings", icon: "Ã¢Å¡â„¢" },
-  { href: "/dashboard/subscription", label: "Subscription", icon: "Ã¢Ëœâ€¦" }
+  { href: "/dashboard", label: "Dashboard", icon: "DB" },
+  { href: "/dashboard/clients", label: "Clients", icon: "CL" },
+  { href: "/dashboard/pipeline", label: "Pipeline", icon: "PL" },
+  { href: "/dashboard/upload", label: "Upload Meeting", icon: "UP" },
+  { href: "/dashboard/meetings", label: "Meetings", icon: "MT" },
+  { href: "/dashboard/tasks", label: "Tasks", icon: "TK" },
+  { href: "/dashboard/reminders", label: "Reminders", icon: "RM" },
+  { href: "/dashboard/proposals", label: "Proposals", icon: "PR" },
+  { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "RB" },
+  { href: "/dashboard/settings", label: "Settings", icon: "ST" },
+  { href: "/dashboard/subscription", label: "Subscription", icon: "SUB" }
 ];
 
 const legalLinks = [

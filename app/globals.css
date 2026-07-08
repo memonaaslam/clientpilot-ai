@@ -3408,3 +3408,15 @@ input[type="file"]::file-selector-button {
     flex-wrap: wrap;
   }
 }
+
+/* Clean text icons for sidebar */
+.nav-icon {
+  font-size: 10px !important;
+  letter-spacing: .04em !important;
+  font-weight: 950 !important;
+}
+
+.nav-label {
+  color: inherit !important;
+}
+
