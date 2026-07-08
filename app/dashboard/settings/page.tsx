@@ -1,3 +1,4 @@
+﻿import { SettingsLogoutPanel } from "@/components/SettingsLogoutPanel";
 import { DashboardShell } from "@/components/DashboardShell";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createClient } from "@supabase/supabase-js";

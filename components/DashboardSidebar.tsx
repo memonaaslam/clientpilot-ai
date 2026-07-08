@@ -64,9 +64,9 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
         </div>
 
         <div className="sidebar-command-card">
-          <span>Today</span>
-          <strong>Follow-up command center</strong>
-          <p>Open reminders, tasks, and proposals before leads go cold.</p>
+          <span>Workspace</span>
+          <strong>memonaaslam00@gmail.com</strong>
+          <p></p>
         </div>
 
         <nav className="side-nav-business" aria-label="Dashboard navigation">
@@ -119,6 +119,7 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
     </aside>
   );
 }
+
 
 
 
