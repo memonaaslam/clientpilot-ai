@@ -14,21 +14,37 @@ function cleanText(value: unknown) {
 
 function formatMoney(value: unknown) {
   const amount = Number(value || 0);
-
   if (!amount) return "To be confirmed";
-
   return `$${amount.toLocaleString()}`;
 }
 
-function addFooter(doc: jsPDF, page: number) {
+function addPageNumber(doc: jsPDF, page: number) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.setTextColor(120, 110, 130);
-  doc.text("Prepared with ClientPilot AI", 20, 285);
-  doc.text(`Page ${page}`, 180, 285);
+  doc.setTextColor(140, 132, 148);
+  doc.text(`Page ${page}`, 182, 287);
 }
 
-function addSection(doc: jsPDF, title: string, y: number) {
+function addWrappedText(doc: jsPDF, text: string, x: number, y: number, width: number, lineHeight = 6.5) {
+  const lines = doc.splitTextToSize(text, width);
+  doc.text(lines, x, y);
+  return y + lines.length * lineHeight;
+}
+
+function addPageIfNeeded(doc: jsPDF, y: number, pageRef: { page: number }, neededSpace = 28) {
+  if (y + neededSpace < 262) return y;
+
+  addPageNumber(doc, pageRef.page);
+  doc.addPage();
+  pageRef.page += 1;
+
+  doc.setDrawColor(235, 228, 235);
+  doc.line(20, 22, 190, 22);
+
+  return 38;
+}
+
+function addSectionTitle(doc: jsPDF, title: string, y: number) {
   doc.setFillColor(248, 245, 248);
   doc.roundedRect(20, y - 6, 170, 12, 3, 3, "F");
 
@@ -40,28 +56,12 @@ function addSection(doc: jsPDF, title: string, y: number) {
   return y + 18;
 }
 
-function addWrappedText(doc: jsPDF, text: string, x: number, y: number, width: number) {
-  const lines = doc.splitTextToSize(text, width);
-  doc.text(lines, x, y);
-  return y + lines.length * 6.5;
-}
-
-function newPageIfNeeded(doc: jsPDF, y: number, pageRef: { page: number }) {
-  if (y < 260) return y;
-
-  addFooter(doc, pageRef.page);
-  doc.addPage();
-  pageRef.page += 1;
-
-  return 28;
-}
-
 function createProposalPdf(proposal: any) {
   const doc = new jsPDF("p", "mm", "a4");
   const pageRef = { page: 1 };
 
   const clientName = proposal.client_name || "Client";
-  const title = proposal.title || "Professional Proposal";
+  const title = proposal.title || "Proposal";
   const content = cleanText(proposal.content);
   const amount = formatMoney(proposal.amount);
   const status = proposal.status || "Draft";
@@ -69,8 +69,9 @@ function createProposalPdf(proposal: any) {
     ? new Date(proposal.created_at).toLocaleDateString()
     : new Date().toLocaleDateString();
 
+  // Premium header
   doc.setFillColor(113, 75, 103);
-  doc.rect(0, 0, 210, 62, "F");
+  doc.rect(0, 0, 210, 58, "F");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -81,31 +82,37 @@ function createProposalPdf(proposal: any) {
   doc.setFontSize(9);
   doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 20, 31);
 
+  // Client info card
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(20, 43, 170, 45, 6, 6, "F");
+  doc.roundedRect(20, 42, 170, 36, 6, 6, "F");
+
+  doc.setTextColor(96, 86, 104);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("PREPARED FOR", 28, 56);
 
   doc.setTextColor(28, 19, 36);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(19);
-  doc.text("Professional Proposal", 28, 60);
+  doc.setFontSize(13);
+  doc.text(clientName, 28, 66);
 
   doc.setTextColor(96, 86, 104);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text(`Prepared for: ${clientName}`, 28, 71);
-  doc.text(`Date: ${createdAt}`, 138, 71);
-  doc.text(`Status: ${status}`, 138, 79);
+  doc.setFontSize(9);
+  doc.text(`Date: ${createdAt}`, 138, 56);
+  doc.text(`Status: ${status}`, 138, 66);
 
-  let y = 106;
+  let y = 98;
 
+  // Proposal title
   doc.setTextColor(28, 19, 36);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  y = addWrappedText(doc, title, 20, y, 170);
+  doc.setFontSize(21);
+  y = addWrappedText(doc, title, 20, y, 170, 8);
 
   y += 10;
 
-  y = addSection(doc, "Project Overview", y);
+  y = addSectionTitle(doc, "Project Overview", y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(58, 50, 64);
@@ -118,13 +125,14 @@ function createProposalPdf(proposal: any) {
     160
   );
 
-  y += 10;
-  y = newPageIfNeeded(doc, y, pageRef);
+  y += 12;
+  y = addPageIfNeeded(doc, y, pageRef, 45);
 
-  y = addSection(doc, "Recommended Solution", y);
+  y = addSectionTitle(doc, "Recommended Solution", y);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(58, 50, 64);
+
   y = addWrappedText(
     doc,
     "Our recommended approach is designed to simplify execution, improve communication, reduce manual follow-up work, and deliver a professional client experience from start to finish.",
@@ -133,10 +141,10 @@ function createProposalPdf(proposal: any) {
     160
   );
 
-  y += 10;
-  y = newPageIfNeeded(doc, y, pageRef);
+  y += 12;
+  y = addPageIfNeeded(doc, y, pageRef, 65);
 
-  y = addSection(doc, "Scope of Work", y);
+  y = addSectionTitle(doc, "Scope of Work", y);
 
   const scope = [
     "Discovery and requirement confirmation",
@@ -151,7 +159,7 @@ function createProposalPdf(proposal: any) {
   doc.setTextColor(58, 50, 64);
 
   for (const item of scope) {
-    y = newPageIfNeeded(doc, y, pageRef);
+    y = addPageIfNeeded(doc, y, pageRef, 14);
 
     doc.setFillColor(113, 75, 103);
     doc.circle(26, y - 1.5, 1.5, "F");
@@ -160,10 +168,10 @@ function createProposalPdf(proposal: any) {
     y += 3;
   }
 
-  y += 8;
-  y = newPageIfNeeded(doc, y, pageRef);
+  y += 10;
+  y = addPageIfNeeded(doc, y, pageRef, 50);
 
-  y = addSection(doc, "Investment", y);
+  y = addSectionTitle(doc, "Investment", y);
 
   doc.setFillColor(252, 250, 252);
   doc.roundedRect(24, y, 160, 30, 5, 5, "F");
@@ -179,9 +187,9 @@ function createProposalPdf(proposal: any) {
   doc.text("Final investment may vary based on confirmed requirements.", 86, y + 18);
 
   y += 48;
-  y = newPageIfNeeded(doc, y, pageRef);
+  y = addPageIfNeeded(doc, y, pageRef, 58);
 
-  y = addSection(doc, "Next Steps", y);
+  y = addSectionTitle(doc, "Next Steps", y);
 
   const nextSteps = [
     "Review the proposal and confirm required changes.",
@@ -191,7 +199,7 @@ function createProposalPdf(proposal: any) {
   ];
 
   nextSteps.forEach((step, index) => {
-    y = newPageIfNeeded(doc, y, pageRef);
+    y = addPageIfNeeded(doc, y, pageRef, 14);
 
     doc.setTextColor(113, 75, 103);
     doc.setFont("helvetica", "bold");
@@ -203,9 +211,10 @@ function createProposalPdf(proposal: any) {
     y += 3;
   });
 
-  y += 12;
-  y = newPageIfNeeded(doc, y, pageRef);
+  y += 16;
+  y = addPageIfNeeded(doc, y, pageRef, 34);
 
+  // Signature area only
   doc.setDrawColor(225, 215, 225);
   doc.line(24, y, 92, y);
   doc.line(118, y, 184, y);
@@ -215,22 +224,7 @@ function createProposalPdf(proposal: any) {
   doc.text("Prepared By", 24, y + 7);
   doc.text("Client Approval", 118, y + 7);
 
-  y += 24;
-
-  doc.setFillColor(248, 245, 248);
-  doc.roundedRect(20, y, 170, 24, 5, 5, "F");
-
-  doc.setTextColor(113, 75, 103);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.text("Proposal Validity", 28, y + 10);
-
-  doc.setTextColor(96, 86, 104);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text("This proposal is valid for 14 days from the date of issue.", 28, y + 18);
-
-  addFooter(doc, pageRef.page);
+  addPageNumber(doc, pageRef.page);
 
   return doc.output("arraybuffer");
 }
