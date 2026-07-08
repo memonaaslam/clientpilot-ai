@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Client = {
   id: string;
@@ -10,41 +10,106 @@ type Client = {
   address?: string | null;
 };
 
+type Meeting = {
+  id: string;
+  title: string;
+  summary?: string | null;
+  created_at?: string | null;
+};
+
+type Reminder = {
+  id: string;
+  title: string;
+  client_name?: string | null;
+  due_at: string;
+  status: string;
+  priority?: string | null;
+};
+
 type SalesStaffWorkspaceProps = {
   staffName: string;
   staffId: string;
 };
 
-export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceProps) {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+function toDateTimeLocal(date: Date) {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
 
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
+function formatDate(value?: string | null) {
+  if (!value) return "No date";
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date(value));
+}
+
+export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceProps) {
+  const [activeTab, setActiveTab] = useState<"clients" | "meetings" | "reminders">("clients");
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+
+  const [meetingTitle, setMeetingTitle] = useState("Client meeting");
+  const [meetingClientId, setMeetingClientId] = useState("");
+  const [meetingNotes, setMeetingNotes] = useState("");
+  const [meetingResult, setMeetingResult] = useState<any>(null);
+
+  const [reminderClientId, setReminderClientId] = useState("");
+  const [reminderTitle, setReminderTitle] = useState("Send proposal");
+  const [reminderType, setReminderType] = useState("proposal");
+  const [reminderPriority, setReminderPriority] = useState("high");
+  const [reminderDueAt, setReminderDueAt] = useState(toDateTimeLocal(new Date(Date.now() + 60 * 60 * 1000)));
+  const [reminderNotes, setReminderNotes] = useState("");
+
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function loadClients() {
+  const selectedReminderClient = useMemo(
+    () => clients.find((client) => client.id === reminderClientId),
+    [clients, reminderClientId]
+  );
+
+  async function loadAll() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/sales-workspace/clients", { cache: "no-store" });
-      const data = await response.json();
-      setClients(data.clients || []);
+      const [clientsResponse, meetingsResponse, remindersResponse] = await Promise.all([
+        fetch("/api/sales-workspace/clients", { cache: "no-store" }),
+        fetch("/api/sales-workspace/meetings", { cache: "no-store" }),
+        fetch("/api/sales-workspace/reminders", { cache: "no-store" })
+      ]);
+
+      const clientsData = await clientsResponse.json();
+      const meetingsData = await meetingsResponse.json();
+      const remindersData = await remindersResponse.json();
+
+      setClients(clientsData.clients || []);
+      setMeetings(meetingsData.meetings || []);
+      setReminders(remindersData.reminders || []);
+
+      if (!meetingClientId && clientsData.clients?.[0]?.id) {
+        setMeetingClientId(clientsData.clients[0].id);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadClients();
+    loadAll();
   }, []);
 
   async function createClient(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     setSaving(true);
     setMessage("");
 
@@ -54,7 +119,12 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name, phone, email, address })
+        body: JSON.stringify({
+          name: clientName,
+          phone: clientPhone,
+          email: clientEmail,
+          address: clientAddress
+        })
       });
 
       const data = await response.json();
@@ -64,12 +134,85 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
         return;
       }
 
-      setName("");
-      setPhone("");
-      setEmail("");
-      setAddress("");
+      setClientName("");
+      setClientPhone("");
+      setClientEmail("");
+      setClientAddress("");
       setMessage("Client added successfully.");
-      await loadClients();
+      await loadAll();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createMeeting(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    setMeetingResult(null);
+
+    try {
+      const response = await fetch("/api/sales-workspace/meetings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          title: meetingTitle,
+          client_id: meetingClientId,
+          notes: meetingNotes
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Unable to process meeting.");
+        return;
+      }
+
+      setMeetingResult(data);
+      setMeetingNotes("");
+      setMessage("Meeting summary and tasks created.");
+      await loadAll();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function createReminder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/sales-workspace/reminders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          client_id: selectedReminderClient?.id || null,
+          client_name: selectedReminderClient?.name || null,
+          client_phone: selectedReminderClient?.phone || null,
+          title: reminderTitle,
+          reminder_type: reminderType,
+          priority: reminderPriority,
+          due_at: new Date(reminderDueAt).toISOString(),
+          notes: reminderNotes
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Unable to create reminder.");
+        return;
+      }
+
+      setReminderNotes("");
+      setMessage("Reminder created successfully.");
+      await loadAll();
     } finally {
       setSaving(false);
     }
@@ -94,6 +237,12 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
           <p>{staffId}</p>
         </div>
 
+        <nav className="sales-tabs">
+          <button onClick={() => setActiveTab("clients")} className={activeTab === "clients" ? "active" : ""}>Clients</button>
+          <button onClick={() => setActiveTab("meetings")} className={activeTab === "meetings" ? "active" : ""}>Meetings</button>
+          <button onClick={() => setActiveTab("reminders")} className={activeTab === "reminders" ? "active" : ""}>Reminders</button>
+        </nav>
+
         <button onClick={logout}>Logout</button>
       </aside>
 
@@ -101,94 +250,175 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
         <div className="page-hero">
           <div>
             <span className="badge">Sales Dashboard</span>
-            <h1 style={{ fontSize: 46 }}>Add and manage clients</h1>
+            <h1 style={{ fontSize: 46 }}>
+              {activeTab === "clients" ? "Manage clients" : activeTab === "meetings" ? "Process meetings" : "Create reminders"}
+            </h1>
             <p className="muted">
-              Add new clients for the owner workspace. Next step will add meetings, reminders, and proposals for sales users.
+              Sales users can add clients, process meeting notes, and schedule follow-up reminders under the owner workspace.
             </p>
           </div>
 
           <div className="hero-mini-card">
-            <strong>{clients.length}</strong>
-            <span>Clients</span>
+            <strong>{activeTab === "clients" ? clients.length : activeTab === "meetings" ? meetings.length : reminders.length}</strong>
+            <span>{activeTab}</span>
           </div>
         </div>
 
-        <div className="sales-workspace-grid">
-          <section className="sales-client-form-card">
-            <h2>Add client</h2>
+        {message ? (
+          <p className={message.includes("Unable") || message.includes("required") ? "auth-error" : "auth-message"}>
+            {message}
+          </p>
+        ) : null}
 
-            <form onSubmit={createClient} className="sales-client-form">
-              <label>
-                Client name
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                />
-              </label>
+        {activeTab === "clients" ? (
+          <div className="sales-workspace-grid">
+            <section className="sales-client-form-card">
+              <h2>Add client</h2>
 
-              <label>
-                Phone
-                <input
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="+971500000000"
-                />
-              </label>
+              <form onSubmit={createClient} className="sales-client-form">
+                <label>Client name<input value={clientName} onChange={(event) => setClientName(event.target.value)} required /></label>
+                <label>Phone<input value={clientPhone} onChange={(event) => setClientPhone(event.target.value)} /></label>
+                <label>Email<input value={clientEmail} onChange={(event) => setClientEmail(event.target.value)} /></label>
+                <label>Address<input value={clientAddress} onChange={(event) => setClientAddress(event.target.value)} /></label>
 
-              <label>
-                Email
-                <input
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="client@example.com"
-                />
-              </label>
+                <button disabled={saving}>{saving ? "Adding..." : "Add Client"}</button>
+              </form>
+            </section>
 
-              <label>
-                Address
-                <input
-                  value={address}
-                  onChange={(event) => setAddress(event.target.value)}
-                  placeholder="Client address"
-                />
-              </label>
+            <section className="sales-client-list-card">
+              <h2>Recent clients</h2>
 
-              {message ? (
-                <p className={message.includes("Unable") ? "auth-error" : "auth-message"}>
-                  {message}
-                </p>
+              {loading ? <p className="muted">Loading clients...</p> : null}
+
+              <div className="sales-client-list">
+                {clients.map((client) => (
+                  <article key={client.id}>
+                    <h3>{client.name}</h3>
+                    <p>{client.phone || "No phone"} · {client.email || "No email"}</p>
+                    {client.address ? <span>{client.address}</span> : null}
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : null}
+
+        {activeTab === "meetings" ? (
+          <div className="sales-workspace-grid">
+            <section className="sales-client-form-card">
+              <h2>Add meeting notes</h2>
+
+              <form onSubmit={createMeeting} className="sales-client-form">
+                <label>
+                  Client
+                  <select value={meetingClientId} onChange={(event) => setMeetingClientId(event.target.value)} required>
+                    {clients.map((client) => (
+                      <option value={client.id} key={client.id}>{client.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Meeting title
+                  <input value={meetingTitle} onChange={(event) => setMeetingTitle(event.target.value)} required />
+                </label>
+
+                <label>
+                  Meeting notes
+                  <textarea value={meetingNotes} onChange={(event) => setMeetingNotes(event.target.value)} required />
+                </label>
+
+                <button disabled={saving || clients.length === 0}>{saving ? "Processing..." : "Create Summary + Tasks"}</button>
+              </form>
+            </section>
+
+            <section className="sales-client-list-card">
+              <h2>Recent meetings</h2>
+
+              {meetingResult ? (
+                <div className="sales-meeting-result">
+                  <span className="badge">Created</span>
+                  <h3>Summary</h3>
+                  <pre>{meetingResult.summary}</pre>
+                  <p className="muted">Tasks created: {meetingResult.tasksCreated}</p>
+                </div>
               ) : null}
 
-              <button disabled={saving}>
-                {saving ? "Adding..." : "Add Client"}
-              </button>
-            </form>
-          </section>
-
-          <section className="sales-client-list-card">
-            <h2>Recent clients</h2>
-
-            {loading ? <p className="muted">Loading clients...</p> : null}
-
-            {!loading && clients.length === 0 ? (
-              <div className="empty-state mini">
-                <h2>No clients yet</h2>
-                <p className="muted">Add your first client from the form.</p>
+              <div className="sales-client-list">
+                {meetings.map((meeting) => (
+                  <article key={meeting.id}>
+                    <h3>{meeting.title}</h3>
+                    <p>{formatDate(meeting.created_at)}</p>
+                  </article>
+                ))}
               </div>
-            ) : null}
+            </section>
+          </div>
+        ) : null}
 
-            <div className="sales-client-list">
-              {clients.map((client) => (
-                <article key={client.id}>
-                  <h3>{client.name}</h3>
-                  <p>{client.phone || "No phone"} · {client.email || "No email"}</p>
-                  {client.address ? <span>{client.address}</span> : null}
-                </article>
-              ))}
-            </div>
-          </section>
-        </div>
+        {activeTab === "reminders" ? (
+          <div className="sales-workspace-grid">
+            <section className="sales-client-form-card">
+              <h2>Create reminder</h2>
+
+              <form onSubmit={createReminder} className="sales-client-form">
+                <label>
+                  Client
+                  <select value={reminderClientId} onChange={(event) => setReminderClientId(event.target.value)}>
+                    <option value="">General reminder</option>
+                    {clients.map((client) => (
+                      <option value={client.id} key={client.id}>{client.name}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>Title<input value={reminderTitle} onChange={(event) => setReminderTitle(event.target.value)} required /></label>
+
+                <label>
+                  Type
+                  <select value={reminderType} onChange={(event) => setReminderType(event.target.value)}>
+                    <option value="proposal">Send proposal</option>
+                    <option value="call">Call client</option>
+                    <option value="whatsapp">WhatsApp follow-up</option>
+                    <option value="payment">Payment follow-up</option>
+                  </select>
+                </label>
+
+                <label>
+                  Priority
+                  <select value={reminderPriority} onChange={(event) => setReminderPriority(event.target.value)}>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </label>
+
+                <label>
+                  Date and time
+                  <input type="datetime-local" value={reminderDueAt} onChange={(event) => setReminderDueAt(event.target.value)} required />
+                </label>
+
+                <label>Notes<input value={reminderNotes} onChange={(event) => setReminderNotes(event.target.value)} /></label>
+
+                <button disabled={saving}>{saving ? "Saving..." : "Create Reminder"}</button>
+              </form>
+            </section>
+
+            <section className="sales-client-list-card">
+              <h2>Upcoming reminders</h2>
+
+              <div className="sales-client-list">
+                {reminders.map((reminder) => (
+                  <article key={reminder.id}>
+                    <h3>{reminder.title}</h3>
+                    <p>{reminder.client_name ? `${reminder.client_name} · ` : ""}{formatDate(reminder.due_at)}</p>
+                    <span>{reminder.priority || "medium"} · {reminder.status}</span>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
+        ) : null}
       </section>
     </main>
   );
