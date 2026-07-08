@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/dashboard/tasks", label: "Tasks", icon: "T" },
   { href: "/dashboard/reminders", label: "Reminders", icon: "R" },
   { href: "/dashboard/sales-team", label: "Sales Team", icon: "A" },
+  { href: "/dashboard/sales-activity", label: "Sales Activity", icon: "SA" },
   { href: "/sales/login", label: "Sales Login", icon: "SL" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "P" },
   { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "B" },
