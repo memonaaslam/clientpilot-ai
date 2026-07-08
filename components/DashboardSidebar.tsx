@@ -12,6 +12,7 @@ type DashboardSidebarProps = {
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "D" },
   { href: "/dashboard/clients", label: "Clients", icon: "C" },
+  { href: "/dashboard/client-timeline", label: "Client Timeline", icon: "CT" },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: "P" },
   { href: "/dashboard/upload", label: "Upload Meeting", icon: "U" },
   { href: "/dashboard/meetings", label: "Meetings", icon: "M" },
@@ -117,4 +118,5 @@ export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProp
     </aside>
   );
 }
+
 
