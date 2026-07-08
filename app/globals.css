@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 :root {
   --bg: #07111f;
   --panel: rgba(255,255,255,0.08);
@@ -3422,8 +3424,6 @@ input[type="file"]::file-selector-button {
 
 
 /* Professional Typography Upgrade */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap');
-
 body {
   font-family: "Inter", Arial, sans-serif !important;
 }
