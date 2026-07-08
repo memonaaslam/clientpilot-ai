@@ -67,7 +67,7 @@ export default async function ProposalPdfPage() {
                 </small>
               </div>
 
-              <a href={`/api/proposal-pdf/${proposal.id}`} className="proposal-pdf-btn">
+              <a href={`/api/proposal-pdf?id=${proposal.id}`} className="proposal-pdf-btn">
                 Download Professional PDF
               </a>
             </article>
@@ -84,3 +84,5 @@ export default async function ProposalPdfPage() {
     </DashboardShell>
   );
 }
+
+
