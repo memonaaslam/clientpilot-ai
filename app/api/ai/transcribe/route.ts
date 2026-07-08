@@ -19,6 +19,19 @@ async function getTextFromFile(file: File) {
   return "";
 }
 
+function createTaskDueDate(index: number) {
+  const date = new Date();
+
+  if (index === 0) {
+    date.setHours(17, 0, 0, 0);
+  } else {
+    date.setDate(date.getDate() + index);
+    date.setHours(10, 0, 0, 0);
+  }
+
+  return date.toISOString();
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -66,8 +79,7 @@ export async function POST(request: Request) {
     if (!notes) {
       return NextResponse.json(
         {
-          error:
-            "Free Smart Mode works with pasted meeting notes or .txt files. Real audio transcription can be enabled later with an OpenAI key."
+          error: "Please paste meeting notes first."
         },
         { status: 400 }
       );
@@ -130,13 +142,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const meetingId = meeting?.id ? String(meeting.id) : "";
+
+    const taskRows = smart.actionItems.map((item, index) => ({
+      user_id: user.id,
+      client_id: clientId || null,
+      meeting_id: meetingId || null,
+      title: item,
+      status: "pending",
+      priority: index === 0 ? "high" : "medium",
+      due_at: createTaskDueDate(index),
+      source: "meeting",
+      notes: `Auto-created from meeting: ${title}`
+    }));
+
+    let createdTasks: any[] = [];
+
+    const taskInsert = await supabase
+      .from("tasks")
+      .insert(taskRows)
+      .select("*");
+
+    if (!taskInsert.error) {
+      createdTasks = taskInsert.data || [];
+    }
+
     return NextResponse.json({
       success: true,
       meeting,
-      meetingId: meeting?.id,
+      meetingId,
       transcript: notes,
       summary: smart.summary,
       actionItems: smart.actionItems,
+      tasks: createdTasks,
+      tasksCreated: createdTasks.length,
       followUp: smart.followUp,
       proposalPoints: smart.proposalPoints,
       autopilot: {
