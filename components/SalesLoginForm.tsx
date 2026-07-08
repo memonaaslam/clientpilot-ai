@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export function SalesLoginForm() {
+  const router = useRouter();
+
+  const [staffId, setStaffId] = useState("");
+  const [pin, setPin] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function login(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/sales-auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          staff_id: staffId,
+          pin
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Unable to login.");
+        return;
+      }
+
+      router.push(data.redirectTo || "/sales/dashboard");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form className="sales-login-form" onSubmit={login}>
+      <label>
+        Staff ID
+        <input
+          value={staffId}
+          onChange={(event) => setStaffId(event.target.value)}
+          placeholder="CP-123456"
+          required
+        />
+      </label>
+
+      <label>
+        PIN
+        <input
+          value={pin}
+          onChange={(event) => setPin(event.target.value)}
+          placeholder="4-digit PIN"
+          type="password"
+          required
+        />
+      </label>
+
+      {error ? <p className="auth-error">{error}</p> : null}
+
+      <button disabled={loading}>
+        {loading ? "Signing in..." : "Open Sales Workspace"}
+      </button>
+    </form>
+  );
+}
