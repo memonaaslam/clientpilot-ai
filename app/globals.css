@@ -4225,3 +4225,260 @@ li {
     width: 100%;
   }
 }
+
+/* Agency Sales Team */
+.sales-team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(380px, 1.1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.sales-team-hero,
+.upgrade-team-card,
+.sales-user-form-card,
+.sales-user-list-card,
+.custom-sales-addon-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  box-shadow: 0 14px 40px rgba(16,24,40,.07);
+}
+
+.sales-team-hero {
+  grid-column: 1 / -1;
+  padding: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+}
+
+.sales-team-hero h2,
+.upgrade-team-card h3,
+.sales-user-form-card h3,
+.sales-user-list-card h3,
+.custom-sales-addon-card h3 {
+  margin: 12px 0 8px;
+  color: var(--text-main);
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.sales-team-hero p,
+.upgrade-team-card p,
+.custom-sales-addon-card p {
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.seat-meter-card {
+  min-width: 210px;
+  padding: 22px;
+  border-radius: 24px;
+  background: #f5f1f4;
+  border: 1px solid #eadfe7;
+  text-align: center;
+}
+
+.seat-meter-card strong,
+.seat-meter-card span {
+  display: block;
+}
+
+.seat-meter-card strong {
+  color: var(--brand);
+  font-size: 42px;
+}
+
+.seat-meter-card span {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.upgrade-team-card,
+.sales-user-form-card,
+.sales-user-list-card,
+.custom-sales-addon-card {
+  padding: 26px;
+}
+
+.sales-user-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.sales-user-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--text-main) !important;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.sales-user-form input {
+  width: 100%;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 15px;
+  background: #ffffff !important;
+  color: var(--text-main) !important;
+  padding: 12px 13px;
+  font-size: 15px;
+  outline: none;
+}
+
+.sales-user-form input:disabled {
+  background: #f8f7f5 !important;
+  color: var(--text-muted) !important;
+}
+
+.sales-access-box {
+  padding: 18px;
+  border-radius: 22px;
+  background: #f5f1f4;
+  border: 1px solid #eadfe7;
+}
+
+.sales-access-box h4 {
+  margin: 12px 0;
+  color: var(--text-main);
+}
+
+.sales-access-box div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(113,75,103,.12);
+}
+
+.sales-access-box div:last-of-type {
+  border-bottom: 0;
+}
+
+.sales-access-box strong {
+  color: var(--text-muted);
+}
+
+.sales-access-box code {
+  color: var(--brand);
+  font-weight: 950;
+  font-size: 18px;
+}
+
+.sales-access-box p {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.sales-user-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.sales-user-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 22px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border-soft);
+}
+
+.sales-status {
+  display: inline-flex;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: capitalize;
+}
+
+.sales-status.active {
+  background: #ecfdf3;
+  color: #067647 !important;
+  border: 1px solid #abefc6;
+}
+
+.sales-status.inactive {
+  background: #f2f4f7;
+  color: var(--text-muted) !important;
+  border: 1px solid #eaecf0;
+}
+
+.sales-user-row h4 {
+  margin: 10px 0 6px;
+  color: var(--text-main);
+}
+
+.sales-user-row p,
+.sales-user-row small {
+  display: block;
+  margin: 0 0 4px;
+  color: var(--text-muted);
+}
+
+.sales-user-row p strong {
+  color: var(--brand);
+}
+
+.sales-user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 130px;
+}
+
+.sales-user-actions button {
+  border: 1px solid var(--border-soft);
+  background: #ffffff;
+  color: var(--text-main) !important;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sales-user-actions button:hover {
+  background: #f5f1f4;
+  color: var(--brand) !important;
+}
+
+.custom-sales-addon-card {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 22px;
+  align-items: center;
+}
+
+@media (max-width: 1050px) {
+  .sales-team-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-team-hero,
+  .sales-user-row,
+  .custom-sales-addon-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .seat-meter-card,
+  .sales-user-actions {
+    width: 100%;
+  }
+
+  .sales-user-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
