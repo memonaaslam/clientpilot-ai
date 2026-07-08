@@ -1,0 +1,316 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+
+type ClientOption = {
+  id: string;
+  name: string;
+};
+
+type Proposal = {
+  id: string;
+  client_id?: string | null;
+  client_name?: string | null;
+  title: string;
+  content: string;
+  amount?: number | null;
+  status?: string | null;
+  updated_at?: string | null;
+};
+
+type ProposalManagerProps = {
+  clients: ClientOption[];
+};
+
+function professionalTemplate(clientName: string) {
+  const name = clientName || "Client";
+
+  return `Prepared for: ${name}
+
+PROJECT OVERVIEW
+Thank you for the opportunity to submit this proposal. Based on our discussion, this proposal outlines the recommended solution, key deliverables, timeline, and next steps.
+
+CLIENT REQUIREMENTS
+- Requirement 1
+- Requirement 2
+- Requirement 3
+
+RECOMMENDED SOLUTION
+We recommend a structured service plan focused on clear execution, consistent communication, and measurable outcomes.
+
+SCOPE OF WORK
+- Strategy and planning
+- Execution of agreed deliverables
+- Progress updates and communication
+- Review and optimization
+
+TIMELINE
+Estimated start date: To be confirmed
+Estimated delivery timeline: To be confirmed after final scope approval
+
+INVESTMENT
+The final investment will be confirmed based on the selected scope, timeline, and deliverables.
+
+NEXT STEPS
+1. Review the proposal.
+2. Confirm required changes if any.
+3. Approve scope and timeline.
+4. Begin onboarding and project execution.
+
+PROPOSAL VALIDITY
+This proposal is valid for 14 days from the date of issue.
+
+Kind regards,
+ClientPilot AI Workspace`;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "Recently updated";
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(new Date(value));
+}
+
+export function ProposalManager({ clients }: ProposalManagerProps) {
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [clientId, setClientId] = useState("");
+  const [title, setTitle] = useState("Service Proposal");
+  const [amount, setAmount] = useState("");
+  const [status, setStatus] = useState("draft");
+  const [content, setContent] = useState(professionalTemplate(""));
+  const [message, setMessage] = useState("");
+
+  const selectedClient = useMemo(
+    () => clients.find((client) => client.id === clientId),
+    [clients, clientId]
+  );
+
+  async function loadProposals() {
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/proposals", { cache: "no-store" });
+      const data = await response.json();
+      setProposals(data.proposals || []);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadProposals();
+  }, []);
+
+  useEffect(() => {
+    if (!editingId) {
+      setContent(professionalTemplate(selectedClient?.name || ""));
+    }
+  }, [clientId, selectedClient?.name, editingId]);
+
+  function resetForm() {
+    setEditingId(null);
+    setClientId("");
+    setTitle("Service Proposal");
+    setAmount("");
+    setStatus("draft");
+    setContent(professionalTemplate(""));
+  }
+
+  function editProposal(proposal: Proposal) {
+    setEditingId(proposal.id);
+    setClientId(proposal.client_id || "");
+    setTitle(proposal.title || "Service Proposal");
+    setAmount(proposal.amount ? String(proposal.amount) : "");
+    setStatus(proposal.status || "draft");
+    setContent(proposal.content || professionalTemplate(proposal.client_name || ""));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function saveProposal(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+
+    const payload = {
+      client_id: selectedClient?.id || null,
+      client_name: selectedClient?.name || null,
+      title,
+      content,
+      amount,
+      status
+    };
+
+    try {
+      const response = await fetch(
+        editingId ? `/api/proposals/${editingId}` : "/api/proposals",
+        {
+          method: editingId ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.error || "Unable to save proposal.");
+        return;
+      }
+
+      setMessage(editingId ? "Proposal updated successfully." : "Proposal created successfully.");
+      resetForm();
+      await loadProposals();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function moveToRecycle(id: string) {
+    const confirmDelete = window.confirm("Move this proposal to Recycle Bin?");
+
+    if (!confirmDelete) return;
+
+    await fetch(`/api/proposals/${id}`, {
+      method: "DELETE"
+    });
+
+    await loadProposals();
+  }
+
+  return (
+    <div className="proposal-manager-layout">
+      <section className="proposal-editor-card">
+        <div className="section-head">
+          <div>
+            <span className="badge">{editingId ? "Edit Proposal" : "New Proposal"}</span>
+            <h2>{editingId ? "Update proposal" : "Create professional proposal"}</h2>
+            <p className="muted">
+              Use a clean business proposal format instead of unprofessional footer/signature placeholders.
+            </p>
+          </div>
+
+          {editingId ? (
+            <button className="btn secondary" onClick={resetForm} type="button">
+              Cancel Edit
+            </button>
+          ) : null}
+        </div>
+
+        <form className="proposal-editor-form" onSubmit={saveProposal}>
+          <div className="proposal-form-grid">
+            <label>
+              Client
+              <select value={clientId} onChange={(event) => setClientId(event.target.value)}>
+                <option value="">General proposal</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Proposal title
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              Amount
+              <input
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                placeholder="Example: 500"
+                type="number"
+                min="0"
+              />
+            </label>
+
+            <label>
+              Status
+              <select value={status} onChange={(event) => setStatus(event.target.value)}>
+                <option value="draft">Draft</option>
+                <option value="sent">Sent</option>
+                <option value="accepted">Accepted</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Proposal content
+            <textarea
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              required
+            />
+          </label>
+
+          {message ? <p className={message.includes("Unable") ? "auth-error" : "auth-message"}>{message}</p> : null}
+
+          <button className="btn gold" disabled={saving}>
+            {saving ? "Saving..." : editingId ? "Save Changes" : "Create Proposal"}
+          </button>
+        </form>
+      </section>
+
+      <section className="proposal-list-card">
+        <div className="section-head">
+          <div>
+            <span className="badge">Proposal Library</span>
+            <h2>Active proposals</h2>
+          </div>
+
+          <Link className="btn secondary" href="/dashboard/recycle-bin">
+            Recycle Bin
+          </Link>
+        </div>
+
+        {loading ? <p className="muted">Loading proposals...</p> : null}
+
+        {!loading && proposals.length === 0 ? (
+          <div className="empty-state mini">
+            <h2>No proposals yet</h2>
+            <p className="muted">Create your first professional proposal above.</p>
+          </div>
+        ) : null}
+
+        <div className="proposal-list">
+          {proposals.map((proposal) => (
+            <article className="proposal-row-card" key={proposal.id}>
+              <div>
+                <span className="proposal-status">{proposal.status || "draft"}</span>
+                <h3>{proposal.title}</h3>
+                <p>
+                  {proposal.client_name ? `${proposal.client_name} · ` : ""}
+                  {formatDate(proposal.updated_at)}
+                </p>
+                {proposal.amount ? <strong>Amount: {proposal.amount}</strong> : null}
+              </div>
+
+              <div className="proposal-row-actions">
+                <button onClick={() => editProposal(proposal)}>Edit</button>
+                <button className="danger" onClick={() => moveToRecycle(proposal.id)}>
+                  Delete
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
