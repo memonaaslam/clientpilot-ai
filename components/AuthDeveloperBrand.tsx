@@ -10,11 +10,13 @@ export function AuthDeveloperBrand() {
 
   return (
     <div className="auth-dev-brand">
-      <span>Software Developed by</span>
-      <img src="/makzora-logo-official.png?v=official" alt="Makzora" />
       <strong>ClientPilot AI</strong>
       <small>Smart CRM • Follow-up Automation • Proposal Workflow</small>
+
+      <div className="auth-dev-line" />
+
+      <span>Software Developed by</span>
+      <img src="/makzora-logo-official.png?v=official" alt="Makzora" />
     </div>
   );
 }
-

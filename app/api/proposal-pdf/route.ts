@@ -252,37 +252,40 @@ function shouldSkipLine(line: string) {
 }
 
 function addFooterBrand(doc: jsPDF, page: number, makzoraLogo: string | null) {
-  const baseY = 268;
+  const baseY = 262;
 
   doc.setDrawColor(238, 230, 238);
-  doc.line(24, 260, 186, 260);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(120, 110, 126);
-  doc.text("Software Developed by", 105, baseY, { align: "center" });
-
-  const logoAdded = safeAddImage(doc, makzoraLogo, 87, baseY + 3, 36, 12);
-
-  if (!logoAdded) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(28, 19, 36);
-    doc.text("Makzora", 105, baseY + 11, { align: "center" });
-  }
+  doc.line(24, 255, 186, 255);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   doc.setTextColor(113, 75, 103);
-  doc.text("ClientPilot AI", 105, baseY + 21, { align: "center" });
+  doc.text("ClientPilot AI", 105, baseY, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
   doc.setTextColor(140, 132, 148);
-  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 105, baseY + 26, {
+  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 105, baseY + 5, {
     align: "center"
   });
 
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(120, 110, 126);
+  doc.text("Software Developed by", 105, baseY + 14, { align: "center" });
+
+  const logoAdded = safeAddImage(doc, makzoraLogo, 91, baseY + 17, 28, 10);
+
+  if (!logoAdded) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(28, 19, 36);
+    doc.text("Makzora", 105, baseY + 24, { align: "center" });
+  }
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(140, 132, 148);
   doc.text(`Page ${page}`, 186, 288);
 }
 
@@ -508,6 +511,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
 
 
 
