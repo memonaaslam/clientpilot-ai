@@ -2,12 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoutButton } from "@/components/LogoutButton";
-
-type DashboardSidebarProps = {
-  userEmail: string | null;
-  isSignedIn: boolean;
-};
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "D" },
@@ -29,97 +23,62 @@ const navItems = [
   { href: "/dashboard/subscription", label: "Subscription", icon: "$" }
 ];
 
-const legalLinks = [
-  { href: "/privacy-policy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/refund-policy", label: "Refunds" },
-  { href: "/contact", label: "Contact" }
-];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard";
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-export function DashboardSidebar({ userEmail, isSignedIn }: DashboardSidebarProps) {
+export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isSignedIn?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <aside className="sidebar sidebar-premium sidebar-business">
-      <div className="sidebar-inner">
-        <div className="sidebar-brand-block sidebar-brand-business">
-          <Link href="/dashboard" className="side-title-business">
-            <span className="brand-emblem">
-              <span>CP</span>
-            </span>
+    <aside className="dashboard-sidebar">
+      <div className="sidebar-top">
+        <Link href="/dashboard" className="sidebar-brand">
+          <span className="sidebar-brand-mark">CP</span>
+          <span>
+            <strong>ClientPilot</strong>
+            <small>AI Workspace</small>
+          </span>
+        </Link>
 
-            <span className="brand-word">
-              <strong>ClientPilot</strong>
-              <small>AI Workspace</small>
-            </span>
-          </Link>
-        </div>
-
-        <div className="sidebar-command-card">
-          <span>Workspace</span>
-          <strong>memonaaslam00@gmail.com</strong>
-          <p></p>
-        </div>
-
-        <nav className="side-nav-business" aria-label="Dashboard navigation">
-          {navItems.map((item, index) => {
-            const active = isActivePath(pathname, item.href);
-
-            return (
-              <Link
-                href={item.href}
-                key={item.href}
-                className={`business-nav-item ${active ? "active" : ""}`}
-                style={{ animationDelay: `${index * 35}ms` }}
-              >
-                <span className="business-nav-icon">{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="sidebar-bottom-business">
-          <div className="account-mini-card business-account">
-            <span className="account-avatar">
-              {userEmail ? userEmail.slice(0, 1).toUpperCase() : "G"}
-            </span>
-
-            <div>
-              <strong>{isSignedIn ? "Workspace" : "Guest"}</strong>
-              <p>{userEmail || "Sign in to continue"}</p>
-            </div>
+        <div className="sidebar-workspace-card">
+          <span className="workspace-avatar">M</span>
+          <div>
+            <strong>Workspace</strong>
+            <small>{userEmail || "memonaaslam00@gmail.com"}</small>
           </div>
+        </div>
+      </div>
 
-          {isSignedIn ? (
-            <LogoutButton />
-          ) : (
-            <Link href="/login" className="sidebar-login-btn">
-              Sign In
+      <nav className="sidebar-nav">
+        {navItems.map((item) => {
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname?.startsWith(item.href);
+
+          return (
+            <Link
+              href={item.href}
+              className={`sidebar-nav-item ${isActive ? "active" : ""}`}
+              key={item.href}
+            >
+              <span>{item.icon}</span>
+              <strong>{item.label}</strong>
             </Link>
-          )}
+          );
+        })}
+      </nav>
 
-          <div className="sidebar-legal-links sidebar-legal-premium">
-            {legalLinks.map((link) => (
-              <Link href={link.href} key={link.href}>
-                {link.label}
-              </Link>
-            ))}
+      <div className="sidebar-bottom">
+        <div className="sidebar-dev-card">
+          <small>Software Developed by</small>
+          <img src="/makzora-logo.png" alt="Makzora" />
+          <div className="sidebar-legal-links">
+            <Link href="/privacy-policy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/refund-policy">Refunds</Link>
+            <Link href="/contact">Contact</Link>
           </div>
         </div>
       </div>
     </aside>
   );
 }
-
-
-
 
