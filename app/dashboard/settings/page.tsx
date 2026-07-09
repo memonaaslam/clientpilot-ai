@@ -86,9 +86,9 @@ async function saveSettings(formData: FormData) {
       logo_url: logoUrl,
       logo_path: logoPath,
       currency: String(formData.get("currency") || "AED"),
-      whatsapp_signature: String(formData.get("whatsapp_signature") || ""),
-      email_signature: String(formData.get("email_signature") || ""),
-      proposal_footer: String(formData.get("proposal_footer") || ""),
+      whatsapp_signature: "",
+      email_signature: "",
+      proposal_footer: "",
       updated_at: new Date().toISOString()
     },
     { onConflict: "user_id" }
@@ -97,7 +97,24 @@ async function saveSettings(formData: FormData) {
   revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard/clients");
   revalidatePath("/dashboard/proposals");
+  revalidatePath("/dashboard/proposal-pdf");
 }
+
+const currencies = [
+  "AED",
+  "USD",
+  "GBP",
+  "EUR",
+  "PKR",
+  "SAR",
+  "QAR",
+  "KWD",
+  "BHD",
+  "OMR",
+  "INR",
+  "CAD",
+  "AUD"
+];
 
 export default async function SettingsPage() {
   const supabase = await createSupabaseServerClient();
@@ -109,7 +126,7 @@ export default async function SettingsPage() {
   const { data: settings } = user
     ? await supabase
         .from("business_settings")
-        .select("business_name,logo_text,logo_url,logo_path,currency,whatsapp_signature,email_signature,proposal_footer")
+        .select("business_name,logo_text,logo_url,logo_path,currency")
         .eq("user_id", user.id)
         .maybeSingle()
     : { data: null };
@@ -121,7 +138,7 @@ export default async function SettingsPage() {
           <span className="badge">White Label</span>
           <h1 style={{ fontSize: 46 }}>Business Settings</h1>
           <p className="muted">
-            Add your own company identity so proposals and follow-ups are branded for your business.
+            Add your company logo, business name, role/title, and currency for branded proposals.
           </p>
         </div>
 
@@ -145,14 +162,14 @@ export default async function SettingsPage() {
             <input
               className="input"
               name="business_name"
-              placeholder="Business name, e.g. Your Company Name"
+              placeholder="Business name, e.g. Memona Aslam"
               defaultValue={settings?.business_name || ""}
             />
 
             <input
               className="input"
               name="logo_text"
-              placeholder="Logo text, e.g. YOUR COMPANY"
+              placeholder="Role / title, e.g. Software developer"
               defaultValue={settings?.logo_text || ""}
             />
 
@@ -169,33 +186,12 @@ export default async function SettingsPage() {
             <p className="file-note">Upload PNG, JPG, WEBP, or SVG. Max size: 2 MB.</p>
 
             <select className="input" name="currency" defaultValue={settings?.currency || "AED"}>
-              <option value="AED">AED</option>
-              <option value="USD">USD</option>
-              <option value="PKR">PKR</option>
-              <option value="SAR">SAR</option>
-              <option value="GBP">GBP</option>
+              {currencies.map((currency) => (
+                <option value={currency} key={currency}>
+                  {currency}
+                </option>
+              ))}
             </select>
-
-            <textarea
-              className="textarea"
-              name="whatsapp_signature"
-              placeholder="WhatsApp signature, e.g. Regards, Your Team"
-              defaultValue={settings?.whatsapp_signature || ""}
-            />
-
-            <textarea
-              className="textarea"
-              name="email_signature"
-              placeholder="Email signature, e.g. Best regards, Your Team"
-              defaultValue={settings?.email_signature || ""}
-            />
-
-            <textarea
-              className="textarea"
-              name="proposal_footer"
-              placeholder="Proposal footer, e.g. This proposal is valid for 7 days."
-              defaultValue={settings?.proposal_footer || ""}
-            />
 
             <button className="btn gold" type="submit">
               Save Settings
@@ -212,24 +208,19 @@ export default async function SettingsPage() {
             ) : null}
 
             <div className="preview-logo">
-              {settings?.logo_text || settings?.business_name || "YOUR BUSINESS"}
+              {settings?.logo_text || "Software developer"}
             </div>
 
             <p className="muted">
-              <strong>Business:</strong> {settings?.business_name || "Not set"}
+              <strong>Business:</strong> {settings?.business_name || "Memona Aslam"}
               <br />
               <strong>Currency:</strong> {settings?.currency || "AED"}
-              <br />
-              <strong>WhatsApp Signature:</strong>{" "}
-              {settings?.whatsapp_signature || "Not set"}
-              <br />
-              <strong>Email Signature:</strong> {settings?.email_signature || "Not set"}
-              <br />
-              <strong>Proposal Footer:</strong> {settings?.proposal_footer || "Not set"}
             </p>
           </div>
         </div>
       </div>
+
+      <SettingsLogoutPanel />
     </DashboardShell>
   );
 }
