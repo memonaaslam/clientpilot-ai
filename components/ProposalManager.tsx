@@ -222,31 +222,42 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
   }
 
   async function moveToRecycle(proposal: Proposal) {
-    const confirmDelete = window.confirm("Delete this proposal from Active Proposals?");
+    const confirmDelete = window.confirm("Delete this proposal from Active Proposals? It will move to Recycle Bin.");
 
     if (!confirmDelete) return;
 
     setMessage("");
 
-    const response = await fetch(`/api/proposals/${proposal.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        deleted: true
-      })
-    });
+    const previousProposals = proposals;
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      setMessage(data.error || "Unable to delete proposal.");
-      return;
-    }
-
+    // Remove immediately from Active Proposal Library
     setProposals((current) => current.filter((item) => item.id !== proposal.id));
-    setMessage("Proposal moved to Recycle Bin.");
+
+    try {
+      const response = await fetch(`/api/proposals/${proposal.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          deleted: true
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setProposals(previousProposals);
+        setMessage(data.error || "Unable to delete proposal.");
+        return;
+      }
+
+      setMessage("Proposal deleted from Active Proposals and moved to Recycle Bin.");
+      await loadProposals();
+    } catch {
+      setProposals(previousProposals);
+      setMessage("Unable to delete proposal.");
+    }
   }
 
   return (
@@ -405,3 +416,4 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     </div>
   );
 }
+
