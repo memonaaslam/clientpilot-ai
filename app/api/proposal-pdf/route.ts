@@ -365,7 +365,7 @@ async function createProposalPdf(
   const businessRole = settings?.logo_text?.trim() || "Software developer";
   const businessLogoUrl = settings?.logo_url?.trim() || "";
   const businessLogo = businessLogoUrl ? await urlToDataUrl(businessLogoUrl) : null;
-  const makzoraLogo = await localImageToDataUrl("makzora-logo.png");
+  const makzoraLogo = await localImageToDataUrl("makzora-logo-official.png");
 
   const proposalTitle = proposal.title || `${clientName} Proposal`;
 
@@ -508,3 +508,4 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
