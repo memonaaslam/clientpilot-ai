@@ -1,3 +1,4 @@
+﻿import { AuthDeveloperBrand } from "@/components/AuthDeveloperBrand";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -13,3 +14,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+

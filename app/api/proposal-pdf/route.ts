@@ -2,8 +2,17 @@
 import { jsPDF } from "jspdf";
 import { createSupabaseAdminClient } from "@/lib/sales-session";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export const runtime = "nodejs";
+
+type BusinessSettings = {
+  business_name?: string | null;
+  logo_text?: string | null;
+  logo_url?: string | null;
+  currency?: string | null;
+};
 
 const SECTION_MARKERS = [
   "PROJECT UNDERSTANDING",
@@ -21,12 +30,7 @@ const SECTION_MARKERS = [
   "PROPOSAL VALIDITY"
 ];
 
-const SKIP_SECTIONS = [
-  "EMAIL SIGNATURE",
-  "FOOTER",
-  "PROPOSAL VALIDITY",
-  "INVESTMENT"
-];
+const SKIP_SECTIONS = ["EMAIL SIGNATURE", "FOOTER", "PROPOSAL VALIDITY", "INVESTMENT"];
 
 const META_LABELS_TO_SKIP_IN_BODY = [
   "prepared by",
@@ -49,12 +53,14 @@ function cleanText(value: unknown) {
 }
 
 function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase())
-    .join("") || "CO";
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase())
+      .join("") || "M"
+  );
 }
 
 function isSectionHeading(line: string) {
@@ -66,7 +72,7 @@ function isSectionHeading(line: string) {
   return SECTION_MARKERS.includes(trimmed.toUpperCase()) || /^[A-Z0-9 &/()\-]+$/.test(trimmed);
 }
 
-function parseProposalContent(content: string, fallbackTitle: string, fallbackClient: string) {
+function parseProposalContent(content: string, fallbackClient: string) {
   const lines = cleanText(content)
     .split("\n")
     .map((line) => line.trim())
@@ -78,11 +84,6 @@ function parseProposalContent(content: string, fallbackTitle: string, fallbackCl
 
   const headerLines = firstSectionIndex >= 0 ? lines.slice(0, firstSectionIndex) : [];
   const bodyLines = firstSectionIndex >= 0 ? lines.slice(firstSectionIndex) : lines;
-
-  const titleLine =
-    headerLines.find((line) => !line.includes(":") && !line.toUpperCase().includes("PROPOSAL")) ||
-    fallbackTitle ||
-    "Proposal";
 
   const proposalLabel =
     headerLines.find((line) => line.toUpperCase().includes("PROPOSAL")) ||
@@ -147,25 +148,63 @@ function parseProposalContent(content: string, fallbackTitle: string, fallbackCl
     }));
 
   return {
-    titleLine,
     proposalLabel,
     meta,
-    companyName: metaMap.get("company") || "Company",
     body: bodyLines.join("\n")
   };
 }
 
-function addBottomBrand(doc: jsPDF, page: number) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(113, 75, 103);
-  doc.text("ClientPilot AI", 105, 283, { align: "center" });
+async function urlToDataUrl(url: string) {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(140, 132, 148);
-  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 105, 288, { align: "center" });
-  doc.text(`Page ${page}`, 185, 288);
+    const contentType = response.headers.get("content-type") || "image/png";
+    const arrayBuffer = await response.arrayBuffer();
+
+    if (!contentType.includes("png") && !contentType.includes("jpeg") && !contentType.includes("jpg")) {
+      return null;
+    }
+
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+async function localImageToDataUrl(fileName: string) {
+  try {
+    const filePath = path.join(process.cwd(), "public", fileName);
+    const buffer = await readFile(filePath);
+    return `data:image/png;base64,${buffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+function imageFormat(dataUrl: string) {
+  if (dataUrl.startsWith("data:image/jpeg")) return "JPEG";
+  if (dataUrl.startsWith("data:image/jpg")) return "JPEG";
+  return "PNG";
+}
+
+function safeAddImage(
+  doc: jsPDF,
+  dataUrl: string | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
+  if (!dataUrl) return false;
+
+  try {
+    doc.addImage(dataUrl, imageFormat(dataUrl), x, y, width, height);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function addWrappedText(
@@ -179,19 +218,6 @@ function addWrappedText(
   const lines = doc.splitTextToSize(text, width);
   doc.text(lines, x, y);
   return y + lines.length * lineHeight;
-}
-
-function addPageIfNeeded(doc: jsPDF, y: number, pageRef: { page: number }, neededSpace = 28) {
-  if (y + neededSpace < 260) return y;
-
-  addBottomBrand(doc, pageRef.page);
-  doc.addPage();
-  pageRef.page += 1;
-
-  doc.setDrawColor(235, 228, 235);
-  doc.line(20, 22, 190, 22);
-
-  return 38;
 }
 
 function addSectionTitle(doc: jsPDF, title: string, y: number) {
@@ -225,27 +251,71 @@ function shouldSkipLine(line: string) {
   return false;
 }
 
-function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page: number }) {
+function addFooterBrand(doc: jsPDF, page: number, makzoraLogo: string | null) {
+  const baseY = 268;
+
+  doc.setDrawColor(238, 230, 238);
+  doc.line(24, 260, 186, 260);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(120, 110, 126);
+  doc.text("Software Developed by", 105, baseY, { align: "center" });
+
+  const logoAdded = safeAddImage(doc, makzoraLogo, 87, baseY + 3, 36, 12);
+
+  if (!logoAdded) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(28, 19, 36);
+    doc.text("Makzora", 105, baseY + 11, { align: "center" });
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(113, 75, 103);
+  doc.text("ClientPilot AI", 105, baseY + 21, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(140, 132, 148);
+  doc.text("Smart CRM • Follow-up Automation • Proposal Workflow", 105, baseY + 26, {
+    align: "center"
+  });
+
+  doc.text(`Page ${page}`, 186, 288);
+}
+
+function addPageIfNeeded(
+  doc: jsPDF,
+  y: number,
+  pageRef: { page: number },
+  makzoraLogo: string | null,
+  neededSpace = 28
+) {
+  if (y + neededSpace < 248) return y;
+
+  addFooterBrand(doc, pageRef.page, makzoraLogo);
+  doc.addPage();
+  pageRef.page += 1;
+
+  doc.setDrawColor(235, 228, 235);
+  doc.line(20, 48, 190, 48);
+
+  return 62;
+}
+
+function renderProposalBody(
+  doc: jsPDF,
+  body: string,
+  y: number,
+  pageRef: { page: number },
+  makzoraLogo: string | null
+) {
   const lines = cleanText(body)
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-
-  if (lines.length === 0) {
-    y = addSectionTitle(doc, "Project Understanding", y);
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(58, 50, 64);
-
-    return addWrappedText(
-      doc,
-      "This proposal outlines the recommended solution, scope of work, timeline, and next steps required to move forward professionally.",
-      24,
-      y,
-      160
-    );
-  }
 
   let skipMode = false;
 
@@ -259,7 +329,7 @@ function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page
       }
 
       skipMode = false;
-      y = addPageIfNeeded(doc, y, pageRef, 22);
+      y = addPageIfNeeded(doc, y, pageRef, makzoraLogo, 22);
       y += 4;
       y = addSectionTitle(doc, line, y);
       continue;
@@ -268,7 +338,7 @@ function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page
     if (skipMode) continue;
     if (shouldSkipLine(line)) continue;
 
-    y = addPageIfNeeded(doc, y, pageRef, 18);
+    y = addPageIfNeeded(doc, y, pageRef, makzoraLogo, 18);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
@@ -281,60 +351,63 @@ function renderProposalBody(doc: jsPDF, body: string, y: number, pageRef: { page
   return y;
 }
 
-function formatAmount(amountValue: unknown, currency: string) {
-  const amount = Number(amountValue || 0);
-  if (!amount) return "";
-  return `${currency || "AED"} ${amount.toLocaleString()}`;
-}
-
-function createProposalPdf(proposal: any) {
+async function createProposalPdf(
+  proposal: any,
+  settings: BusinessSettings | null
+) {
   const doc = new jsPDF("p", "mm", "a4");
   const pageRef = { page: 1 };
 
   const clientName = proposal.client_name || "Client";
-  const fallbackTitle = proposal.title || "Proposal";
+  const parsed = parseProposalContent(cleanText(proposal.content), clientName);
 
-  const parsed = parseProposalContent(
-    cleanText(proposal.content),
-    fallbackTitle,
-    clientName
-  );
+  const businessName = settings?.business_name?.trim() || "Memona Aslam";
+  const businessRole = settings?.logo_text?.trim() || "Software developer";
+  const businessLogoUrl = settings?.logo_url?.trim() || "";
+  const businessLogo = businessLogoUrl ? await urlToDataUrl(businessLogoUrl) : null;
+  const makzoraLogo = await localImageToDataUrl("makzora-logo.png");
 
-  const currencyMeta = parsed.meta.find((item) => item.label.toLowerCase() === "currency")?.value || "AED";
-  const amount = formatAmount(proposal.amount, currencyMeta);
+  const proposalTitle = proposal.title || `${clientName} Proposal`;
 
-  // Clean company header
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, 210, 297, "F");
 
-  doc.setFillColor(113, 75, 103);
-  doc.roundedRect(20, 18, 18, 18, 4, 4, "F");
+  const logoAdded = safeAddImage(doc, businessLogo, 20, 16, 28, 28);
 
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(getInitials(parsed.companyName), 29, 30, { align: "center" });
+  if (!logoAdded) {
+    doc.setFillColor(113, 75, 103);
+    doc.roundedRect(20, 18, 24, 24, 5, 5, "F");
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(getInitials(businessName), 32, 33, { align: "center" });
+  }
 
   doc.setTextColor(28, 19, 36);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
-  doc.text(parsed.companyName, 44, 29);
+  doc.setFontSize(19);
+  doc.text(businessName, 54, 27);
+
+  doc.setTextColor(120, 110, 126);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text(businessRole, 54, 35);
 
   doc.setDrawColor(235, 228, 235);
-  doc.line(20, 44, 190, 44);
+  doc.line(20, 50, 190, 50);
 
-  // Proposal header card
   doc.setFillColor(250, 247, 250);
-  doc.roundedRect(20, 54, 170, 82, 6, 6, "F");
+  doc.roundedRect(20, 60, 170, 82, 6, 6, "F");
 
   doc.setTextColor(28, 19, 36);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
 
-  const titleLines = doc.splitTextToSize(parsed.titleLine, 154);
-  doc.text(titleLines, 28, 70);
+  const titleLines = doc.splitTextToSize(proposalTitle, 154);
+  doc.text(titleLines, 28, 76);
 
-  let cardY = 70 + titleLines.length * 6.5 + 5;
+  let cardY = 76 + titleLines.length * 6.5 + 5;
 
   doc.setTextColor(113, 75, 103);
   doc.setFont("helvetica", "bold");
@@ -358,29 +431,12 @@ function createProposalPdf(proposal: any) {
     doc.text(value, x + 24, rowY);
   });
 
-  let y = 154;
+  let y = 160;
 
-  y = renderProposalBody(doc, parsed.body, y, pageRef);
-
-  if (amount) {
-    y += 12;
-    y = addPageIfNeeded(doc, y, pageRef, 50);
-
-    y = addSectionTitle(doc, "Investment", y);
-
-    doc.setFillColor(252, 250, 252);
-    doc.roundedRect(24, y, 160, 30, 5, 5, "F");
-
-    doc.setTextColor(113, 75, 103);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(17);
-    doc.text(amount, 32, y + 18);
-
-    y += 48;
-  }
+  y = renderProposalBody(doc, parsed.body, y, pageRef, makzoraLogo);
 
   y += 16;
-  y = addPageIfNeeded(doc, y, pageRef, 34);
+  y = addPageIfNeeded(doc, y, pageRef, makzoraLogo, 40);
 
   doc.setDrawColor(225, 215, 225);
   doc.line(24, y, 92, y);
@@ -391,7 +447,7 @@ function createProposalPdf(proposal: any) {
   doc.text("Prepared By", 24, y + 7);
   doc.text("Client Approval", 118, y + 7);
 
-  addBottomBrand(doc, pageRef.page);
+  addFooterBrand(doc, pageRef.page, makzoraLogo);
 
   return doc.output("arraybuffer");
 }
@@ -428,8 +484,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Proposal not found." }, { status: 404 });
     }
 
-    const pdf = createProposalPdf(proposal);
-    const filename = `${String(proposal.title || "proposal").replace(/[^a-z0-9]/gi, "-").toLowerCase()}-proposal.pdf`;
+    const { data: settings } = await supabase
+      .from("business_settings")
+      .select("business_name,logo_text,logo_url,currency")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const pdf = await createProposalPdf(proposal, settings);
+
+    const filename = `${String(proposal.title || "proposal")
+      .replace(/[^a-z0-9]/gi, "-")
+      .toLowerCase()}-proposal.pdf`;
 
     return new Response(pdf, {
       status: 200,
