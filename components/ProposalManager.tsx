@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -16,6 +16,7 @@ type Proposal = {
   amount?: number | null;
   status?: string | null;
   updated_at?: string | null;
+  sales_user_id?: string | null;
 };
 
 type ProposalManagerProps = {
@@ -25,9 +26,19 @@ type ProposalManagerProps = {
 function professionalTemplate(clientName: string) {
   const name = clientName || "Client";
 
-  return `Prepared for: ${name}
+  return `${name} - Service Proposal
+PROPOSAL DRAFT
+Prepared By: Memona Aslam
+Client: ${name}
+Company: Not specified
+Phone: Not specified
+Email: Not specified
+Meeting: Service Proposal
+Currency: AED
+Budget/pricing: Budget was not clearly confirmed in the notes.
+Timeline: Timeline was not clearly confirmed in the notes.
 
-PROJECT OVERVIEW
+PROJECT UNDERSTANDING
 Thank you for the opportunity to submit this proposal. Based on our discussion, this proposal outlines the recommended solution, key deliverables, timeline, and next steps.
 
 CLIENT REQUIREMENTS
@@ -38,30 +49,22 @@ CLIENT REQUIREMENTS
 RECOMMENDED SOLUTION
 We recommend a structured service plan focused on clear execution, consistent communication, and measurable outcomes.
 
-SCOPE OF WORK
-- Strategy and planning
-- Execution of agreed deliverables
-- Progress updates and communication
-- Review and optimization
+PROPOSED SCOPE
+1. Requirement review and final briefing
+2. Concept direction and recommended solution
+3. Scope confirmation and deliverables planning
+4. Timeline and execution planning
+5. Official quotation preparation
+6. Follow-up coordination and approval support
 
-TIMELINE
-Estimated start date: To be confirmed
-Estimated delivery timeline: To be confirmed after final scope approval
+EXPECTED DELIVERABLES
+- Professional proposal draft
+- Clear project scope
+- Timeline and next steps
+- Follow-up message for client approval
 
-INVESTMENT
-The final investment will be confirmed based on the selected scope, timeline, and deliverables.
-
-NEXT STEPS
-1. Review the proposal.
-2. Confirm required changes if any.
-3. Approve scope and timeline.
-4. Begin onboarding and project execution.
-
-PROPOSAL VALIDITY
-This proposal is valid for 14 days from the date of issue.
-
-Kind regards,
-ClientPilot AI Workspace`;
+RECOMMENDED NEXT STEP
+Schedule a follow-up call or site visit, confirm the final scope, and send the official quotation for approval.`;
 }
 
 function formatDate(value?: string | null) {
@@ -71,6 +74,22 @@ function formatDate(value?: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function statusLabel(status?: string | null) {
+  const value = status || "draft";
+
+  const labels: Record<string, string> = {
+    draft: "Draft",
+    pending_owner_review: "Pending Owner Review",
+    approved: "Approved",
+    changes_requested: "Changes Requested",
+    sent: "Sent",
+    accepted: "Accepted",
+    rejected: "Rejected"
+  };
+
+  return labels[value] || value;
 }
 
 export function ProposalManager({ clients }: ProposalManagerProps) {
@@ -173,6 +192,35 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     }
   }
 
+  async function updateProposalStatus(proposal: Proposal, nextStatus: string) {
+    setMessage("");
+
+    const response = await fetch(`/api/proposals/${proposal.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        status: nextStatus
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Unable to update proposal.");
+      return;
+    }
+
+    setMessage(
+      nextStatus === "approved"
+        ? "Proposal approved successfully."
+        : "Changes requested for this proposal."
+    );
+
+    await loadProposals();
+  }
+
   async function moveToRecycle(proposal: Proposal) {
     const confirmDelete = window.confirm("Delete this proposal from Active Proposals?");
 
@@ -209,7 +257,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
             <span className="badge">{editingId ? "Edit Proposal" : "New Proposal"}</span>
             <h2>{editingId ? "Update proposal" : "Create professional proposal"}</h2>
             <p className="muted">
-              Create a clean, editable client proposal with professional wording.
+              Create, approve, and manage client proposals from one workspace.
             </p>
           </div>
 
@@ -258,6 +306,9 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
               Status
               <select value={status} onChange={(event) => setStatus(event.target.value)}>
                 <option value="draft">Draft</option>
+                <option value="pending_owner_review">Pending Owner Review</option>
+                <option value="approved">Approved</option>
+                <option value="changes_requested">Changes Requested</option>
                 <option value="sent">Sent</option>
                 <option value="accepted">Accepted</option>
                 <option value="rejected">Rejected</option>
@@ -307,19 +358,42 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
           {proposals.map((proposal) => (
             <article className="proposal-row-card" key={proposal.id}>
               <div>
-                <span className="proposal-status">{proposal.status || "draft"}</span>
+                <span className={`proposal-status status-${proposal.status || "draft"}`}>
+                  {statusLabel(proposal.status)}
+                </span>
                 <h3>{proposal.title}</h3>
                 <p>
-                  {proposal.client_name ? `${proposal.client_name} · ` : ""}
+                  {proposal.client_name ? `${proposal.client_name} - ` : ""}
                   {formatDate(proposal.updated_at)}
                 </p>
+
+                {proposal.sales_user_id ? (
+                  <p className="muted">Created by sales staff</p>
+                ) : null}
+
                 {proposal.amount ? <strong>Amount: {proposal.amount}</strong> : null}
               </div>
 
               <div className="proposal-row-actions">
+                {proposal.status === "pending_owner_review" ? (
+                  <>
+                    <button type="button" onClick={() => updateProposalStatus(proposal, "approved")}>
+                      Approve
+                    </button>
+                    <button type="button" onClick={() => updateProposalStatus(proposal, "changes_requested")}>
+                      Request Changes
+                    </button>
+                  </>
+                ) : null}
+
+                <a href={`/api/proposal-pdf?id=${proposal.id}`} target="_blank" rel="noreferrer">
+                  Export PDF
+                </a>
+
                 <button type="button" onClick={() => editProposal(proposal)}>
                   Edit
                 </button>
+
                 <button type="button" className="danger" onClick={() => moveToRecycle(proposal)}>
                   Delete
                 </button>
