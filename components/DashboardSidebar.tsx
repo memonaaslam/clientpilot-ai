@@ -69,7 +69,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
       <div className="sidebar-bottom">
         <div className="sidebar-dev-card">
           <small>Software Developed by</small>
-          <img src="/makzora-logo-official.png" alt="Makzora" />
+          <img src="/makzora-logo-official.png?v=official" alt="Makzora" />
           <div className="sidebar-legal-links">
             <Link href="/privacy-policy">Privacy</Link>
             <Link href="/terms">Terms</Link>
@@ -81,5 +81,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
     </aside>
   );
 }
+
+
 
 
