@@ -9,6 +9,10 @@ type RouteContext = {
   }>;
 };
 
+function createShareToken() {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -28,29 +32,17 @@ export async function PATCH(request: Request, context: RouteContext) {
       updated_at: new Date().toISOString()
     };
 
-    if ("client_id" in body) {
-      payload.client_id = body.client_id ? String(body.client_id) : null;
+    if (body.create_share_link) {
+      payload.share_token = createShareToken();
+      payload.shared_at = new Date().toISOString();
     }
 
-    if ("client_name" in body) {
-      payload.client_name = body.client_name ? String(body.client_name) : null;
-    }
-
-    if ("title" in body) {
-      payload.title = String(body.title || "");
-    }
-
-    if ("content" in body) {
-      payload.content = String(body.content || "");
-    }
-
-    if ("amount" in body) {
-      payload.amount = body.amount ? Number(body.amount) : null;
-    }
-
-    if ("status" in body) {
-      payload.status = String(body.status || "draft");
-    }
+    if ("client_id" in body) payload.client_id = body.client_id ? String(body.client_id) : null;
+    if ("client_name" in body) payload.client_name = body.client_name ? String(body.client_name) : null;
+    if ("title" in body) payload.title = String(body.title || "");
+    if ("content" in body) payload.content = String(body.content || "");
+    if ("amount" in body) payload.amount = body.amount ? Number(body.amount) : null;
+    if ("status" in body) payload.status = String(body.status || "draft");
 
     if ("deleted" in body) {
       const deleted = Boolean(body.deleted);

@@ -17,6 +17,7 @@ type Proposal = {
   status?: string | null;
   updated_at?: string | null;
   sales_user_id?: string | null;
+  share_token?: string | null;
 };
 
 type ProposalManagerProps = {
@@ -90,6 +91,11 @@ function statusLabel(status?: string | null) {
   };
 
   return labels[value] || value;
+}
+
+function getShareUrl(token?: string | null) {
+  if (!token || typeof window === "undefined") return "";
+  return `${window.location.origin}/proposal/${token}`;
 }
 
 export function ProposalManager({ clients }: ProposalManagerProps) {
@@ -221,6 +227,42 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     await loadProposals();
   }
 
+  async function createShareLink(proposal: Proposal) {
+    setMessage("");
+
+    const response = await fetch(`/api/proposals/${proposal.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        create_share_link: true
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setMessage(data.error || "Unable to create share link.");
+      return;
+    }
+
+    setMessage("Share link created successfully.");
+    await loadProposals();
+  }
+
+  async function copyShareLink(proposal: Proposal) {
+    const url = getShareUrl(proposal.share_token);
+
+    if (!url) {
+      setMessage("Create a share link first.");
+      return;
+    }
+
+    await navigator.clipboard.writeText(url);
+    setMessage("Share link copied.");
+  }
+
   async function moveToRecycle(proposal: Proposal) {
     const confirmDelete = window.confirm("Delete this proposal from Active Proposals? It will move to Recycle Bin.");
 
@@ -230,7 +272,6 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
 
     const previousProposals = proposals;
 
-    // Remove immediately from Active Proposal Library
     setProposals((current) => current.filter((item) => item.id !== proposal.id));
 
     try {
@@ -268,7 +309,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
             <span className="badge">{editingId ? "Edit Proposal" : "New Proposal"}</span>
             <h2>{editingId ? "Update proposal" : "Create professional proposal"}</h2>
             <p className="muted">
-              Create, approve, and manage client proposals from one workspace.
+              Create, approve, share, and manage client proposals from one workspace.
             </p>
           </div>
 
@@ -295,11 +336,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
 
             <label>
               Proposal title
-              <input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
+              <input value={title} onChange={(event) => setTitle(event.target.value)} required />
             </label>
 
             <label>
@@ -329,11 +366,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
 
           <label>
             Proposal content
-            <textarea
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              required
-            />
+            <textarea value={content} onChange={(event) => setContent(event.target.value)} required />
           </label>
 
           {message ? (
@@ -366,54 +399,83 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
         ) : null}
 
         <div className="proposal-list">
-          {proposals.map((proposal) => (
-            <article className="proposal-row-card" key={proposal.id}>
-              <div>
-                <span className={`proposal-status status-${proposal.status || "draft"}`}>
-                  {statusLabel(proposal.status)}
-                </span>
-                <h3>{proposal.title}</h3>
-                <p>
-                  {proposal.client_name ? `${proposal.client_name} - ` : ""}
-                  {formatDate(proposal.updated_at)}
-                </p>
+          {proposals.map((proposal) => {
+            const shareUrl = getShareUrl(proposal.share_token);
+            const messageText = `Hi ${proposal.client_name || "there"}, please review the proposal here: ${shareUrl}`;
 
-                {proposal.sales_user_id ? (
-                  <p className="muted">Created by sales staff</p>
-                ) : null}
+            return (
+              <article className="proposal-row-card" key={proposal.id}>
+                <div>
+                  <span className={`proposal-status status-${proposal.status || "draft"}`}>
+                    {statusLabel(proposal.status)}
+                  </span>
+                  <h3>{proposal.title}</h3>
+                  <p>
+                    {proposal.client_name ? `${proposal.client_name} - ` : ""}
+                    {formatDate(proposal.updated_at)}
+                  </p>
 
-                {proposal.amount ? <strong>Amount: {proposal.amount}</strong> : null}
-              </div>
+                  {proposal.sales_user_id ? <p className="muted">Created by sales staff</p> : null}
+                  {proposal.amount ? <strong>Amount: {proposal.amount}</strong> : null}
 
-              <div className="proposal-row-actions">
-                {proposal.status === "pending_owner_review" ? (
-                  <>
-                    <button type="button" onClick={() => updateProposalStatus(proposal, "approved")}>
-                      Approve
+                  {proposal.share_token ? (
+                    <p className="muted">Share link ready</p>
+                  ) : null}
+                </div>
+
+                <div className="proposal-row-actions">
+                  {proposal.status === "pending_owner_review" ? (
+                    <>
+                      <button type="button" onClick={() => updateProposalStatus(proposal, "approved")}>
+                        Approve
+                      </button>
+                      <button type="button" onClick={() => updateProposalStatus(proposal, "changes_requested")}>
+                        Request Changes
+                      </button>
+                    </>
+                  ) : null}
+
+                  <a href={`/api/proposal-pdf?id=${proposal.id}`} target="_blank" rel="noreferrer">
+                    Export PDF
+                  </a>
+
+                  {!proposal.share_token ? (
+                    <button type="button" onClick={() => createShareLink(proposal)}>
+                      Create Share Link
                     </button>
-                    <button type="button" onClick={() => updateProposalStatus(proposal, "changes_requested")}>
-                      Request Changes
-                    </button>
-                  </>
-                ) : null}
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => copyShareLink(proposal)}>
+                        Copy Link
+                      </button>
 
-                <a href={`/api/proposal-pdf?id=${proposal.id}`} target="_blank" rel="noreferrer">
-                  Export PDF
-                </a>
+                      <a href={shareUrl} target="_blank" rel="noreferrer">
+                        Open Link
+                      </a>
 
-                <button type="button" onClick={() => editProposal(proposal)}>
-                  Edit
-                </button>
+                      <a href={`https://wa.me/?text=${encodeURIComponent(messageText)}`} target="_blank" rel="noreferrer">
+                        WhatsApp Share
+                      </a>
 
-                <button type="button" className="danger" onClick={() => moveToRecycle(proposal)}>
-                  Delete
-                </button>
-              </div>
-            </article>
-          ))}
+                      <a href={`mailto:?subject=${encodeURIComponent(proposal.title)}&body=${encodeURIComponent(messageText)}`}>
+                        Email Share
+                      </a>
+                    </>
+                  )}
+
+                  <button type="button" onClick={() => editProposal(proposal)}>
+                    Edit
+                  </button>
+
+                  <button type="button" className="danger" onClick={() => moveToRecycle(proposal)}>
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
     </div>
   );
 }
-
