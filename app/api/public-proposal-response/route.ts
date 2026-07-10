@@ -36,15 +36,17 @@ export async function POST(request: Request) {
 
     const supabase = createSupabaseAdmin();
 
-    const status = action === "accepted" ? "accepted" : "changes_requested";
-
     const updateData: Record<string, unknown> = {
-      status,
+      status: action,
       updated_at: new Date().toISOString()
     };
 
-    if (note) {
-      updateData.content_note = note;
+    if (action === "changes_requested") {
+      updateData.content_note = note || "No note provided by client.";
+    }
+
+    if (action === "accepted") {
+      updateData.content_note = note || null;
     }
 
     const { data, error } = await supabase
@@ -52,7 +54,7 @@ export async function POST(request: Request) {
       .update(updateData)
       .eq("share_token", token)
       .eq("deleted", false)
-      .select("id,title,status")
+      .select("id,title,status,content_note")
       .single();
 
     if (error || !data) {

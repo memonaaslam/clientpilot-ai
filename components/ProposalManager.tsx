@@ -18,6 +18,7 @@ type Proposal = {
   updated_at?: string | null;
   sales_user_id?: string | null;
   share_token?: string | null;
+  content_note?: string | null;
 };
 
 type ProposalManagerProps = {
@@ -418,6 +419,12 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
                   {proposal.sales_user_id ? <p className="muted">Created by sales staff</p> : null}
                   {proposal.amount ? <strong>Amount: {proposal.amount}</strong> : null}
 
+                  {proposal.status === "changes_requested" ? (
+                    <p className="proposal-client-note">
+                      <strong>Client note:</strong> {proposal.content_note || "No note provided by client."}
+                    </p>
+                  ) : null}
+
                   {proposal.share_token ? (
                     <p className="muted">Share link ready</p>
                   ) : null}
@@ -479,5 +486,8 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     </div>
   );
 }
+
+
+
 
 

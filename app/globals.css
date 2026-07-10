@@ -7097,3 +7097,18 @@ li {
 .proposal-client-note strong {
   color: var(--brand);
 }
+
+/* Client response note in owner proposal library */
+.proposal-client-note {
+  margin-top: 12px !important;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(113,75,103,.08);
+  color: var(--text-main) !important;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.proposal-client-note strong {
+  color: var(--brand);
+}
