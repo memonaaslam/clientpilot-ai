@@ -93,3 +93,4 @@ export function ClientProposalActions({ token, currentStatus }: ClientProposalAc
     </section>
   );
 }
+
