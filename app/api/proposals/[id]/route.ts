@@ -9,10 +9,6 @@ type RouteContext = {
   }>;
 };
 
-function createShareToken() {
-  return crypto.randomUUID().replace(/-/g, "");
-}
-
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -31,11 +27,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     const payload: Record<string, unknown> = {
       updated_at: new Date().toISOString()
     };
-
-    if (body.create_share_link) {
-      payload.share_token = createShareToken();
-      payload.shared_at = new Date().toISOString();
-    }
 
     if ("client_id" in body) payload.client_id = body.client_id ? String(body.client_id) : null;
     if ("client_name" in body) payload.client_name = body.client_name ? String(body.client_name) : null;

@@ -77,7 +77,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("proposals")
-      .select("id,title,client_name,amount,status,created_at,updated_at,sales_user_id")
+      .select("id,title,client_name,amount,status,created_at,updated_at,sales_user_id,content_note")
       .eq("user_id", session.ownerId)
       .eq("sales_user_id", session.salesUser.id)
       .eq("deleted", false)
@@ -184,3 +184,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

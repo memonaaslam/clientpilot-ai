@@ -480,3 +480,4 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
   );
 }
 
+
