@@ -95,7 +95,7 @@ function statusLabel(status?: string | null) {
 
 function getShareUrl(token?: string | null) {
   if (!token || typeof window === "undefined") return "";
-  return `${window.location.origin}/proposal/${token}`;
+  return `${window.location.origin}/proposal?token=${token}`;
 }
 
 export function ProposalManager({ clients }: ProposalManagerProps) {
@@ -479,3 +479,4 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     </div>
   );
 }
+
