@@ -15,7 +15,7 @@ const navItems = [
   { href: "/dashboard/follow-ups", label: "Follow-ups", icon: "F" },
   { href: "/dashboard/sales-team", label: "Sales Team", icon: "A" },
   { href: "/dashboard/sales-activity", label: "Sales Activity", icon: "SA" },
-  { href: "/sales/login", label: "Sales Login", icon: "SL" },
+  { href: "/clientpilotai/sales/login", label: "Sales Login", icon: "SL" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "P" },
   { href: "/dashboard/proposal-pdf", label: "Proposal PDF", icon: "PDF" },
   { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "B" },
