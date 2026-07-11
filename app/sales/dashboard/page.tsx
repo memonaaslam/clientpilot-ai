@@ -8,7 +8,7 @@ export default async function SalesDashboardPage() {
   const session = await getCurrentSalesSession();
 
   if (!session) {
-    redirect("/clientpilotai/sales/login");
+    redirect("/sales/login");
   }
 
   return (

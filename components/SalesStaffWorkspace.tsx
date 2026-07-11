@@ -290,7 +290,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
 
   async function logout() {
     await fetch("/clientpilotai/api/sales-auth/logout", { method: "POST" });
-    window.location.href = "/clientpilotai/sales/login";
+    window.location.href = "/sales/login";
   }
 
   const heroTitle =

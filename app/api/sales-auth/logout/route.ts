@@ -8,6 +8,6 @@ export async function POST() {
 
   return NextResponse.json({
     success: true,
-    redirectTo: "/clientpilotai/sales/login"
+    redirectTo: "/sales/login"
   });
 }
