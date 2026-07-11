@@ -43,7 +43,7 @@ export function RecorderUploader({ clients }: { clients: ClientOption[] }) {
     formData.append("clientId", clientId);
     formData.append("title", title);
 
-    const res = await fetch("/api/ai/transcribe", { method: "POST", body: formData });
+    const res = await fetch("/clientpilotai/api/ai/transcribe", { method: "POST", body: formData });
     const json = await res.json();
     if (!res.ok) return setStatus(json.error || "Upload failed.");
     setStatus(`Done. Meeting saved: ${json.meetingId}`);

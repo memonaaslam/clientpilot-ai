@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 type ActivityRow = {
@@ -39,7 +39,7 @@ export function SalesActivityTracker() {
     setError("");
 
     try {
-      const response = await fetch("/api/sales-activity", {
+      const response = await fetch("/clientpilotai/api/sales-activity", {
         cache: "no-store"
       });
 

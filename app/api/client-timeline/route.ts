@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/sales-session";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 

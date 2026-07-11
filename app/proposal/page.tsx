@@ -1,4 +1,4 @@
-﻿import { ClientProposalActions } from "@/components/ClientProposalActions";
+import { ClientProposalActions } from "@/components/ClientProposalActions";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 

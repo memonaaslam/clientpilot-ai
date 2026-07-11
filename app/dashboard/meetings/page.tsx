@@ -1,4 +1,4 @@
-﻿import { CopyButton } from "@/components/CopyButton";
+import { CopyButton } from "@/components/CopyButton";
 import { DashboardShell } from "@/components/DashboardShell";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 

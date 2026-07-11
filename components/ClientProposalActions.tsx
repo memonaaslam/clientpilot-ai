@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -18,7 +18,7 @@ export function ClientProposalActions({ token, currentStatus }: ClientProposalAc
     setMessage("");
 
     try {
-      const response = await fetch("/api/public-proposal-response", {
+      const response = await fetch("/clientpilotai/api/public-proposal-response", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

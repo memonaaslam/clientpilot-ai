@@ -365,7 +365,7 @@ export default async function DashboardPage() {
                   <div>
                     <strong>{reminder.title}</strong>
                     <span>
-                      {reminder.client_name ? `${reminder.client_name} · ` : ""}
+                      {reminder.client_name ? `${reminder.client_name} Â· ` : ""}
                       {formatDate(reminder.due_at)}
                     </span>
                   </div>
@@ -400,7 +400,7 @@ export default async function DashboardPage() {
                   <div>
                     <strong>{proposal.title}</strong>
                     <span>
-                      {proposal.client_name ? `${proposal.client_name} · ` : ""}
+                      {proposal.client_name ? `${proposal.client_name} Â· ` : ""}
                       {formatDate(proposal.updated_at)}
                     </span>
                   </div>

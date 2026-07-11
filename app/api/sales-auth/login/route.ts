@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createSalesSession, createSupabaseAdminClient, hashValue } from "@/lib/sales-session";
 
 export const runtime = "nodejs";

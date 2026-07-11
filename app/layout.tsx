@@ -1,4 +1,4 @@
-﻿import { AuthDeveloperBrand } from "@/components/AuthDeveloperBrand";
+import { AuthDeveloperBrand } from "@/components/AuthDeveloperBrand";
 import type { Metadata } from "next";
 import "./globals.css";
 

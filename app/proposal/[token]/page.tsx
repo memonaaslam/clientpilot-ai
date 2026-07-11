@@ -1,11 +1,12 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { ClientProposalActions } from "@/components/ClientProposalActions";
+import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-type PageContext = {
-  params: Promise<{
-    token: string;
+type PageProps = {
+  searchParams: Promise<{
+    token?: string;
   }>;
 };
 
@@ -52,9 +53,37 @@ function removePrivateHeader(content: string) {
   return index >= 0 ? lines.slice(index).join("\n").trim() : cleanContent(content);
 }
 
-export default async function PublicProposalPage({ params }: PageContext) {
-  const { token } = await params;
+function statusLabel(status?: string | null) {
+  const labels: Record<string, string> = {
+    draft: "Draft",
+    pending_owner_review: "Pending Owner Review",
+    approved: "Approved",
+    changes_requested: "Changes Requested",
+    sent: "Sent",
+    accepted: "Accepted",
+    rejected: "Rejected"
+  };
+
+  return labels[status || "draft"] || status || "Draft";
+}
+
+export default async function PublicProposalPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const token = String(params.token || "");
+
   const supabase = createSupabaseAdmin();
+
+  if (!token) {
+    return (
+      <main className="public-proposal-page">
+        <section className="public-proposal-empty">
+          <h1>Proposal link missing</h1>
+          <p>Please open the proposal using the full share link.</p>
+          <Link href="/">Back to ClientPilot AI</Link>
+        </section>
+      </main>
+    );
+  }
 
   const { data: proposal } = await supabase
     .from("proposals")
@@ -104,7 +133,7 @@ export default async function PublicProposalPage({ params }: PageContext) {
           </div>
 
           <div className="public-proposal-status">
-            <span>{proposal.status || "proposal"}</span>
+            <span>{statusLabel(proposal.status)}</span>
           </div>
         </header>
 
@@ -124,7 +153,7 @@ export default async function PublicProposalPage({ params }: PageContext) {
 
           <div>
             <span>Status</span>
-            <strong>{proposal.status || "Draft"}</strong>
+            <strong>{statusLabel(proposal.status)}</strong>
           </div>
         </section>
 

@@ -15,7 +15,7 @@ export function SalesLoginForm() {
     setError("");
 
     try {
-      const response = await fetch("/api/sales-auth/login", {
+      const response = await fetch("/clientpilotai/api/sales-auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

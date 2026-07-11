@@ -46,7 +46,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/sales-users", { cache: "no-store" });
+      const response = await fetch("/clientpilotai/api/sales-users", { cache: "no-store" });
       const data = await response.json();
       setSalesUsers(data.salesUsers || []);
     } finally {
@@ -65,7 +65,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
     setNewAccess(null);
 
     try {
-      const response = await fetch("/api/sales-users", {
+      const response = await fetch("/clientpilotai/api/sales-users", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -96,7 +96,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
   }
 
   async function setStatus(id: string, status: string) {
-    const response = await fetch(`/api/sales-users/${id}`, {
+    const response = await fetch(`/clientpilotai/api/sales-users/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -119,7 +119,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
 
     if (!confirmReset) return;
 
-    const response = await fetch(`/api/sales-users/${id}`, {
+    const response = await fetch(`/clientpilotai/api/sales-users/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -273,7 +273,7 @@ export function SalesTeamManager({ currentPlan }: SalesTeamManagerProps) {
                   Staff ID: <strong>{salesUser.staff_id}</strong>
                 </p>
                 <small>
-                  {salesUser.email ? `${salesUser.email} Â· ` : ""}
+                  {salesUser.email ? `${salesUser.email} Ã‚Â· ` : ""}
                   {formatDate(salesUser.created_at)}
                 </small>
               </div>

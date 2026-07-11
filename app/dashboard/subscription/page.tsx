@@ -91,7 +91,7 @@ export default async function SubscriptionPage() {
                   <h3>{plan.name}</h3>
                   <div className="pricing-price-clean">{plan.priceLabel}</div>
                   <p>
-                    {plan.monthlyMeetingLimit} uploads/month · {plan.userLimit} user
+                    {plan.monthlyMeetingLimit} uploads/month Â· {plan.userLimit} user
                     {plan.userLimit > 1 ? "s" : ""}
                   </p>
                 </div>

@@ -44,7 +44,7 @@ export function LostLeadRescuePanel({ leads }: LostLeadRescuePanelProps) {
     setMessage("");
 
     try {
-      const response = await fetch("/api/reminders", {
+      const response = await fetch("/clientpilotai/api/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -110,7 +110,7 @@ export function LostLeadRescuePanel({ leads }: LostLeadRescuePanelProps) {
                   <h3>{lead.name}</h3>
 
                   <p>
-                    Silent for {lead.daysSilent} days · {lead.reason}
+                    Silent for {lead.daysSilent} days Â· {lead.reason}
                   </p>
 
                   <small>Last activity: {lead.lastActivity}</small>

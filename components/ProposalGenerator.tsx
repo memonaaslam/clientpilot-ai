@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 
@@ -97,7 +97,7 @@ export function ProposalGenerator(props: ProposalGeneratorProps) {
     setError("");
 
     try {
-      const response = await fetch("/api/proposals", {
+      const response = await fetch("/clientpilotai/api/proposals", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

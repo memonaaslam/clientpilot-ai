@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -121,7 +121,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/proposals", { cache: "no-store" });
+      const response = await fetch("/clientpilotai/api/proposals", { cache: "no-store" });
       const data = await response.json();
       setProposals(data.proposals || []);
     } finally {
@@ -174,7 +174,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
 
     try {
       const response = await fetch(
-        editingId ? `/api/proposals/${editingId}` : "/api/proposals",
+        editingId ? `/clientpilotai/api/proposals/${editingId}` : "/api/proposals",
         {
           method: editingId ? "PATCH" : "POST",
           headers: {
@@ -202,7 +202,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
   async function updateProposalStatus(proposal: Proposal, nextStatus: string) {
     setMessage("");
 
-    const response = await fetch(`/api/proposals/${proposal.id}`, {
+    const response = await fetch(`/clientpilotai/api/proposals/${proposal.id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -231,7 +231,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
   async function createShareLink(proposal: Proposal) {
     setMessage("");
 
-    const response = await fetch(`/api/proposals/${proposal.id}`, {
+    const response = await fetch(`/clientpilotai/api/proposals/${proposal.id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -276,7 +276,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
     setProposals((current) => current.filter((item) => item.id !== proposal.id));
 
     try {
-      const response = await fetch(`/api/proposals/${proposal.id}`, {
+      const response = await fetch(`/clientpilotai/api/proposals/${proposal.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json"
@@ -442,7 +442,7 @@ export function ProposalManager({ clients }: ProposalManagerProps) {
                     </>
                   ) : null}
 
-                  <a href={`/api/proposal-pdf?id=${proposal.id}`} target="_blank" rel="noreferrer">
+                  <a href={`/clientpilotai/api/proposal-pdf?id=${proposal.id}`} target="_blank" rel="noreferrer">
                     Export PDF
                   </a>
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -107,10 +107,10 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
 
     try {
       const [clientsResponse, meetingsResponse, remindersResponse, proposalsResponse] = await Promise.all([
-        fetch("/api/sales-workspace/clients", { cache: "no-store" }),
-        fetch("/api/sales-workspace/meetings", { cache: "no-store" }),
-        fetch("/api/sales-workspace/reminders", { cache: "no-store" }),
-        fetch("/api/sales-workspace/proposals", { cache: "no-store" })
+        fetch("/clientpilotai/api/sales-workspace/clients", { cache: "no-store" }),
+        fetch("/clientpilotai/api/sales-workspace/meetings", { cache: "no-store" }),
+        fetch("/clientpilotai/api/sales-workspace/reminders", { cache: "no-store" }),
+        fetch("/clientpilotai/api/sales-workspace/proposals", { cache: "no-store" })
       ]);
 
       const clientsData = await clientsResponse.json();
@@ -147,7 +147,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
     setMessage("");
 
     try {
-      const response = await fetch("/api/sales-workspace/clients", {
+      const response = await fetch("/clientpilotai/api/sales-workspace/clients", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -185,7 +185,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
     setMeetingResult(null);
 
     try {
-      const response = await fetch("/api/sales-workspace/meetings", {
+      const response = await fetch("/clientpilotai/api/sales-workspace/meetings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -219,7 +219,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
     setMessage("");
 
     try {
-      const response = await fetch("/api/sales-workspace/reminders", {
+      const response = await fetch("/clientpilotai/api/sales-workspace/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -258,7 +258,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
     setProposalResult(null);
 
     try {
-      const response = await fetch("/api/sales-workspace/proposals", {
+      const response = await fetch("/clientpilotai/api/sales-workspace/proposals", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -289,7 +289,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
   }
 
   async function logout() {
-    await fetch("/api/sales-auth/logout", { method: "POST" });
+    await fetch("/clientpilotai/api/sales-auth/logout", { method: "POST" });
     window.location.href = "/sales/login";
   }
 

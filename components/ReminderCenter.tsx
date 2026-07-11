@@ -98,7 +98,7 @@ export function ReminderCenter({ clients }: ReminderCenterProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/reminders", { cache: "no-store" });
+      const response = await fetch("/clientpilotai/api/reminders", { cache: "no-store" });
       const data = await response.json();
       setReminders(data.reminders || []);
     } finally {
@@ -115,7 +115,7 @@ export function ReminderCenter({ clients }: ReminderCenterProps) {
     setSaving(true);
 
     try {
-      await fetch("/api/reminders", {
+      await fetch("/clientpilotai/api/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -140,7 +140,7 @@ export function ReminderCenter({ clients }: ReminderCenterProps) {
   }
 
   async function markDone(id: string) {
-    await fetch(`/api/reminders/${id}`, {
+    await fetch(`/clientpilotai/api/reminders/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -155,7 +155,7 @@ export function ReminderCenter({ clients }: ReminderCenterProps) {
     const nextDate = new Date(reminder.due_at);
     nextDate.setDate(nextDate.getDate() + 1);
 
-    await fetch(`/api/reminders/${reminder.id}`, {
+    await fetch(`/clientpilotai/api/reminders/${reminder.id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -304,7 +304,7 @@ export function ReminderCenter({ clients }: ReminderCenterProps) {
                 <h4>{reminder.title}</h4>
 
                 <p>
-                  {reminder.client_name ? `${reminder.client_name} · ` : ""}
+                  {reminder.client_name ? `${reminder.client_name} Â· ` : ""}
                   {formatDate(reminder.due_at)}
                 </p>
 

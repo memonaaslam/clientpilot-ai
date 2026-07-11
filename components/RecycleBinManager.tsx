@@ -26,7 +26,7 @@ export function RecycleBinManager() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/proposals?recycle=true", { cache: "no-store" });
+      const response = await fetch("/clientpilotai/api/proposals?recycle=true", { cache: "no-store" });
       const data = await response.json();
       setProposals(data.proposals || []);
     } finally {
@@ -39,7 +39,7 @@ export function RecycleBinManager() {
   }, []);
 
   async function recoverProposal(id: string) {
-    await fetch(`/api/proposals/${id}`, {
+    await fetch(`/clientpilotai/api/proposals/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
@@ -57,7 +57,7 @@ export function RecycleBinManager() {
 
     if (!confirmDelete) return;
 
-    await fetch(`/api/proposals/${id}?permanent=true`, {
+    await fetch(`/clientpilotai/api/proposals/${id}?permanent=true`, {
       method: "DELETE"
     });
 
@@ -89,7 +89,7 @@ export function RecycleBinManager() {
             <div>
               <h3>{proposal.title}</h3>
               <p>
-                {proposal.client_name ? `${proposal.client_name} · ` : ""}
+                {proposal.client_name ? `${proposal.client_name} Â· ` : ""}
                 Deleted {formatDate(proposal.deleted_at)}
               </p>
             </div>

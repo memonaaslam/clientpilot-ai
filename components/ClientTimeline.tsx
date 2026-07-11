@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -41,7 +41,7 @@ export function ClientTimeline() {
 
     try {
       const query = id ? `?client_id=${encodeURIComponent(id)}` : "";
-      const response = await fetch(`/api/client-timeline${query}`, { cache: "no-store" });
+      const response = await fetch(`/clientpilotai/api/client-timeline${query}`, { cache: "no-store" });
       const data = await response.json();
 
       if (!response.ok) {

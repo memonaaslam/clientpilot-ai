@@ -1,4 +1,4 @@
-﻿import { DashboardShell } from "@/components/DashboardShell";
+import { DashboardShell } from "@/components/DashboardShell";
 import { SalesActivityTracker } from "@/components/SalesActivityTracker";
 
 export const dynamic = "force-dynamic";

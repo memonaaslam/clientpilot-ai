@@ -1,4 +1,4 @@
-﻿import { DashboardShell } from "@/components/DashboardShell";
+import { DashboardShell } from "@/components/DashboardShell";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { revalidatePath } from "next/cache";
 

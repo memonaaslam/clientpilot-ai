@@ -1,4 +1,4 @@
-﻿import { DashboardShell } from "@/components/DashboardShell";
+import { DashboardShell } from "@/components/DashboardShell";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 import { createSupabaseAdminClient } from "@/lib/sales-session";
 
@@ -67,7 +67,7 @@ export default async function ProposalPdfPage() {
                 </small>
               </div>
 
-              <a href={`/api/proposal-pdf?id=${proposal.id}`} className="proposal-pdf-btn">
+              <a href={`/clientpilotai/api/proposal-pdf?id=${proposal.id}`} className="proposal-pdf-btn">
                 Download Professional PDF
               </a>
             </article>

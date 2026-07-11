@@ -60,7 +60,7 @@ export function AnimatedProductDemo() {
           </div>
         </div>
 
-        <div className="cp-demo-arrow">→</div>
+        <div className="cp-demo-arrow">â†’</div>
 
         <div className="cp-demo-card polished">
           <div className="cp-demo-label">

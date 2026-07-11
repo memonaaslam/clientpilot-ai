@@ -47,7 +47,7 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
       formData.set("clientId", clientId);
       formData.set("notes", notes);
 
-      const response = await fetch("/api/ai/transcribe", {
+      const response = await fetch("/clientpilotai/api/ai/transcribe", {
         method: "POST",
         body: formData
       });
@@ -79,7 +79,7 @@ export function SmartMeetingUpload({ clients }: SmartMeetingUploadProps) {
     setMessage("");
 
     try {
-      const response = await fetch("/api/reminders", {
+      const response = await fetch("/clientpilotai/api/reminders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

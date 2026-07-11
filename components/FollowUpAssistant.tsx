@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -38,7 +38,7 @@ export function FollowUpAssistant() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/follow-up-assistant", { cache: "no-store" });
+      const response = await fetch("/clientpilotai/api/follow-up-assistant", { cache: "no-store" });
       const data = await response.json();
 
       setClients(data.clients || []);
@@ -63,7 +63,7 @@ export function FollowUpAssistant() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/follow-up-assistant", {
+      const response = await fetch("/clientpilotai/api/follow-up-assistant", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
