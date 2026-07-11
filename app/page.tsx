@@ -112,6 +112,7 @@ export default function HomePage() {
           <a href="#command-center">Command Center</a>
           <a href="#agency">Agency Mode</a>
           <a href="#pricing">Pricing</a>
+          <a href="https://www.makzora.com">Makzora</a>
         </nav>
 
         <div className="cp-nav-actions">
@@ -397,3 +398,5 @@ export default function HomePage() {
     </main>
   );
 }
+
+
