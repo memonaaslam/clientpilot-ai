@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      redirectTo: "/sales/dashboard"
+      redirectTo: "/clientpilotai/sales/dashboard"
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to login.";

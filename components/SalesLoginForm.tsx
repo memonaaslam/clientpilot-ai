@@ -33,7 +33,7 @@ export function SalesLoginForm() {
         return;
       }
 
-      window.location.href = data.redirectTo || "/sales/dashboard";
+      window.location.href = "/clientpilotai/sales/dashboard";
     } catch {
       setError("Login failed. Please check Staff ID, PIN, and deployment.");
     } finally {
