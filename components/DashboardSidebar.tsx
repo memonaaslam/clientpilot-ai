@@ -74,7 +74,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
           <div className="sidebar-dev-line" />
 
           <span>Software Developed by</span>
-          <img src="/makzora-logo-official.png?v=official" alt="Makzora" />
+          <img src="/clientpilotai/makzora-logo-official.png?v=official" alt="Makzora" />
 
           <div className="sidebar-legal-links">
             <Link href="/privacy-policy">Privacy</Link>

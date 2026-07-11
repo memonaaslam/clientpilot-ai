@@ -16,7 +16,7 @@ export function AuthDeveloperBrand() {
       <div className="auth-dev-line" />
 
       <span>Software Developed by</span>
-      <img src="/makzora-logo-official.png?v=official" alt="Makzora" />
+      <img src="/clientpilotai/makzora-logo-official.png?v=official" alt="Makzora" />
     </div>
   );
 }

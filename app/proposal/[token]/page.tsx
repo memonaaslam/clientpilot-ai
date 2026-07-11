@@ -167,7 +167,7 @@ export default async function PublicProposalPage({ searchParams }: PageProps) {
 
           <div>
             <small>Software Developed by</small>
-            <img src="/makzora-logo-official.png" alt="Makzora" />
+            <img src="/clientpilotai/makzora-logo-official.png" alt="Makzora" />
           </div>
         </footer>
       </section>
