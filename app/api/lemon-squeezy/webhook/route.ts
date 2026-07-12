@@ -17,6 +17,18 @@ type LemonPayload = {
   };
 };
 
+type ExistingSubscription = {
+  plan: string | null;
+  status: string | null;
+  lemon_customer_id: string | null;
+  lemon_subscription_id: string | null;
+  lemon_order_id: string | null;
+  lemon_product_id: string | null;
+  lemon_variant_id: string | null;
+  current_period_start: string | null;
+  current_period_end: string | null;
+};
+
 function createSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -55,13 +67,16 @@ function verifySignature(
 }
 
 function getTextValue(value: unknown): string {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) {
+    return "";
+  }
+
   return String(value).trim();
 }
 
 function getNullableValue(value: unknown): string | null {
-  const cleaned = getTextValue(value);
-  return cleaned || null;
+  const valueString = getTextValue(value);
+  return valueString || null;
 }
 
 function getPlanFromPayload(payload: LemonPayload): PlanId {
@@ -85,9 +100,17 @@ function getPlanFromPayload(payload: LemonPayload): PlanId {
     .join(" ")
     .toLowerCase();
 
-  if (productText.includes("agency")) return "agency";
-  if (productText.includes("starter")) return "starter";
-  if (productText.includes("pro")) return "pro";
+  if (productText.includes("agency")) {
+    return "agency";
+  }
+
+  if (productText.includes("starter")) {
+    return "starter";
+  }
+
+  if (productText.includes("pro")) {
+    return "pro";
+  }
 
   return "free";
 }
@@ -95,7 +118,7 @@ function getPlanFromPayload(payload: LemonPayload): PlanId {
 function getCustomerEmail(payload: LemonPayload): string {
   const attributes = payload.data?.attributes ?? {};
 
-  const values = [
+  const possibleEmails = [
     payload.meta?.custom_data?.email,
     attributes.user_email,
     attributes.customer_email,
@@ -103,7 +126,7 @@ function getCustomerEmail(payload: LemonPayload): string {
     attributes.billing_email
   ];
 
-  const email = values
+  const email = possibleEmails
     .map(getTextValue)
     .find(Boolean);
 
@@ -125,11 +148,10 @@ function subscriptionHasEnded(
   status: string,
   endsAt: string | null
 ): boolean {
-  if (eventName === "subscription_expired") {
-    return true;
-  }
-
-  if (status === "expired") {
+  if (
+    eventName === "subscription_expired" ||
+    status === "expired"
+  ) {
     return true;
   }
 
@@ -145,6 +167,34 @@ function subscriptionHasEnded(
   }
 
   return false;
+}
+
+function isPaymentEvent(eventName: string): boolean {
+  return [
+    "subscription_payment_success",
+    "subscription_payment_failed",
+    "subscription_payment_recovered"
+  ].includes(eventName);
+}
+
+function getFinalStatus(
+  eventName: string,
+  payloadStatus: string,
+  existingStatus: string | null
+): string {
+  if (eventName === "subscription_payment_success") {
+    return "active";
+  }
+
+  if (eventName === "subscription_payment_recovered") {
+    return "active";
+  }
+
+  if (eventName === "subscription_payment_failed") {
+    return "past_due";
+  }
+
+  return payloadStatus || existingStatus || "active";
 }
 
 async function findUserIdByEmail(email: string) {
@@ -197,9 +247,7 @@ export async function POST(request: Request) {
     const signature =
       request.headers.get("x-signature");
 
-    if (
-      !verifySignature(rawBody, signature, secret)
-    ) {
+    if (!verifySignature(rawBody, signature, secret)) {
       return NextResponse.json(
         {
           error: "Invalid Lemon Squeezy signature."
@@ -209,13 +257,11 @@ export async function POST(request: Request) {
     }
 
     const payload = JSON.parse(rawBody) as LemonPayload;
+    const attributes = payload.data?.attributes ?? {};
 
     const eventName = getTextValue(
       payload.meta?.event_name
     );
-
-    const attributes =
-      payload.data?.attributes ?? {};
 
     const customerEmail =
       getCustomerEmail(payload);
@@ -239,31 +285,80 @@ export async function POST(request: Request) {
       });
     }
 
-    const detectedPlan =
-      getPlanFromPayload(payload);
+    const admin = createSupabaseAdmin();
 
-    const status =
-      getTextValue(attributes.status)
-        .toLowerCase() || "active";
+    const {
+      data: existingData,
+      error: existingError
+    } = await admin
+      .from("subscriptions")
+      .select(
+        [
+          "plan",
+          "status",
+          "lemon_customer_id",
+          "lemon_subscription_id",
+          "lemon_order_id",
+          "lemon_product_id",
+          "lemon_variant_id",
+          "current_period_start",
+          "current_period_end"
+        ].join(",")
+      )
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (existingError) {
+      throw new Error(
+        `Unable to read existing subscription: ${existingError.message}`
+      );
+    }
+
+    const existing =
+      existingData as ExistingSubscription | null;
+
+    const payloadStatus =
+      getTextValue(attributes.status).toLowerCase();
 
     const endsAt =
       getNullableValue(attributes.ends_at);
 
+    const detectedPlan =
+      getPlanFromPayload(payload);
+
     const hasEnded = subscriptionHasEnded(
       eventName,
-      status,
+      payloadStatus,
       endsAt
     );
 
-    /*
-      A cancelled subscription remains on its paid plan
-      until ends_at. It becomes Free only after expiration.
-    */
-    const finalPlan: PlanId = hasEnded
-      ? "free"
-      : detectedPlan;
+    let finalPlan: PlanId;
 
-    const admin = createSupabaseAdmin();
+    if (hasEnded) {
+      finalPlan = "free";
+    } else if (isPaymentEvent(eventName)) {
+      /*
+        Payment events do not reliably contain product or
+        variant names. They must preserve the existing plan.
+      */
+      finalPlan = normalizePlan(
+        existing?.plan || detectedPlan
+      );
+    } else {
+      finalPlan = detectedPlan;
+    }
+
+    const finalStatus = getFinalStatus(
+      eventName,
+      payloadStatus,
+      existing?.status ?? null
+    );
+
+    const subscriptionId =
+      getNullableValue(
+        payload.data?.id ||
+          attributes.subscription_id
+      ) || existing?.lemon_subscription_id || null;
 
     const { error: upsertError } = await admin
       .from("subscriptions")
@@ -271,28 +366,41 @@ export async function POST(request: Request) {
         {
           user_id: userId,
           plan: finalPlan,
-          status,
-          lemon_customer_id: getNullableValue(
-            attributes.customer_id
-          ),
-          lemon_subscription_id: getNullableValue(
-            payload.data?.id ||
-              attributes.subscription_id
-          ),
-          lemon_order_id: getNullableValue(
-            attributes.order_id
-          ),
-          lemon_product_id: getNullableValue(
-            attributes.product_id
-          ),
-          lemon_variant_id: getNullableValue(
-            attributes.variant_id
-          ),
-          current_period_start: getNullableValue(
-            attributes.created_at
-          ),
+          status: finalStatus,
+
+          lemon_customer_id:
+            getNullableValue(attributes.customer_id) ||
+            existing?.lemon_customer_id ||
+            null,
+
+          lemon_subscription_id:
+            subscriptionId,
+
+          lemon_order_id:
+            getNullableValue(attributes.order_id) ||
+            existing?.lemon_order_id ||
+            null,
+
+          lemon_product_id:
+            getNullableValue(attributes.product_id) ||
+            existing?.lemon_product_id ||
+            null,
+
+          lemon_variant_id:
+            getNullableValue(attributes.variant_id) ||
+            existing?.lemon_variant_id ||
+            null,
+
+          current_period_start:
+            getNullableValue(attributes.created_at) ||
+            existing?.current_period_start ||
+            null,
+
           current_period_end:
-            getCurrentPeriodEnd(attributes),
+            getCurrentPeriodEnd(attributes) ||
+            existing?.current_period_end ||
+            null,
+
           updated_at: new Date().toISOString()
         },
         {
@@ -311,8 +419,9 @@ export async function POST(request: Request) {
       eventName,
       userId,
       plan: finalPlan,
-      status,
-      accessEndsAt: endsAt
+      status: finalStatus,
+      preservedExistingPlan:
+        isPaymentEvent(eventName)
     });
   } catch (error) {
     const message =
