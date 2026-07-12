@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+
 import { normalizePlan, type PlanId } from "@/lib/plans";
 
 export const runtime = "nodejs";
@@ -12,7 +13,7 @@ type LemonPayload = {
   };
   data?: {
     id?: string;
-    attributes?: Record<string, any>;
+    attributes?: Record<string, unknown>;
   };
 };
 
@@ -26,116 +27,143 @@ function createSupabaseAdmin() {
 
   return createClient(url, key, {
     auth: {
-      persistSession: false
+      persistSession: false,
+      autoRefreshToken: false
     }
   });
 }
 
-function verifySignature(rawBody: string, signature: string | null, secret: string) {
+function verifySignature(
+  rawBody: string,
+  signature: string | null,
+  secret: string
+) {
   if (!signature) return false;
 
-  const digest = createHmac("sha256", secret).update(rawBody).digest("hex");
+  const expectedSignature = createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
 
-  const digestBuffer = Buffer.from(digest, "utf8");
-  const signatureBuffer = Buffer.from(signature, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  const receivedBuffer = Buffer.from(signature, "utf8");
 
-  if (digestBuffer.length !== signatureBuffer.length) {
+  if (expectedBuffer.length !== receivedBuffer.length) {
     return false;
   }
 
-  return timingSafeEqual(digestBuffer, signatureBuffer);
+  return timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+function getTextValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function getNullableValue(value: unknown): string | null {
+  const cleaned = getTextValue(value);
+  return cleaned || null;
 }
 
 function getPlanFromPayload(payload: LemonPayload): PlanId {
-  const attrs = payload.data?.attributes || {};
-  const customPlan = String(payload.meta?.custom_data?.plan || "").toLowerCase();
+  const attributes = payload.data?.attributes ?? {};
+
+  const customPlan = getTextValue(
+    payload.meta?.custom_data?.plan
+  ).toLowerCase();
 
   if (customPlan) {
     return normalizePlan(customPlan);
   }
 
   const productText = [
-    attrs.product_name,
-    attrs.variant_name,
-    attrs.name,
-    attrs.product_id,
-    attrs.variant_id
+    attributes.product_name,
+    attributes.variant_name,
+    attributes.name
   ]
+    .map(getTextValue)
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
 
   if (productText.includes("agency")) return "agency";
-  if (productText.includes("pro")) return "pro";
   if (productText.includes("starter")) return "starter";
+  if (productText.includes("pro")) return "pro";
 
   return "free";
 }
 
-function getCustomerEmail(payload: LemonPayload) {
-  const attrs = payload.data?.attributes || {};
-  const customEmail = payload.meta?.custom_data?.email;
+function getCustomerEmail(payload: LemonPayload): string {
+  const attributes = payload.data?.attributes ?? {};
 
-  return String(
-    customEmail ||
-      attrs.user_email ||
-      attrs.customer_email ||
-      attrs.email ||
-      attrs.billing_email ||
-      attrs.first_order_item?.user_email ||
-      ""
-  )
-    .trim()
-    .toLowerCase();
+  const values = [
+    payload.meta?.custom_data?.email,
+    attributes.user_email,
+    attributes.customer_email,
+    attributes.email,
+    attributes.billing_email
+  ];
+
+  const email = values
+    .map(getTextValue)
+    .find(Boolean);
+
+  return (email ?? "").toLowerCase();
 }
 
-function getCleanValue(value: unknown) {
-  if (value === null || value === undefined) return null;
-  return String(value);
-}
-
-function getPeriodEnd(attrs: Record<string, any>) {
+function getCurrentPeriodEnd(
+  attributes: Record<string, unknown>
+): string | null {
   return (
-    getCleanValue(attrs.renews_at) ||
-    getCleanValue(attrs.ends_at) ||
-    getCleanValue(attrs.trial_ends_at) ||
-    null
+    getNullableValue(attributes.renews_at) ||
+    getNullableValue(attributes.ends_at) ||
+    getNullableValue(attributes.trial_ends_at)
   );
 }
 
-function shouldSetFreePlan(eventName: string, status: string) {
-  const inactiveEvents = [
-    "subscription_cancelled",
-    "subscription_expired",
-    "subscription_paused"
-  ];
+function subscriptionHasEnded(
+  eventName: string,
+  status: string,
+  endsAt: string | null
+): boolean {
+  if (eventName === "subscription_expired") {
+    return true;
+  }
 
-  const inactiveStatuses = [
-    "cancelled",
-    "expired",
-    "paused",
-    "unpaid",
-    "past_due"
-  ];
+  if (status === "expired") {
+    return true;
+  }
 
-  return inactiveEvents.includes(eventName) || inactiveStatuses.includes(status);
+  if (status === "cancelled" && endsAt) {
+    const endDate = new Date(endsAt);
+
+    if (
+      !Number.isNaN(endDate.getTime()) &&
+      endDate.getTime() <= Date.now()
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function findUserIdByEmail(email: string) {
   const admin = createSupabaseAdmin();
 
   for (let page = 1; page <= 10; page += 1) {
-    const { data, error } = await admin.auth.admin.listUsers({
-      page,
-      perPage: 1000
-    });
+    const { data, error } =
+      await admin.auth.admin.listUsers({
+        page,
+        perPage: 1000
+      });
 
     if (error) {
       throw error;
     }
 
     const foundUser = data.users.find(
-      (user) => user.email?.toLowerCase() === email.toLowerCase()
+      (user) =>
+        user.email?.toLowerCase() === email.toLowerCase()
     );
 
     if (foundUser) {
@@ -152,76 +180,154 @@ async function findUserIdByEmail(email: string) {
 
 export async function POST(request: Request) {
   try {
-    const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
+    const secret =
+      process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
 
     if (!secret) {
       return NextResponse.json(
-        { error: "LEMON_SQUEEZY_WEBHOOK_SECRET is missing." },
+        {
+          error:
+            "LEMON_SQUEEZY_WEBHOOK_SECRET is missing."
+        },
         { status: 500 }
       );
     }
 
     const rawBody = await request.text();
-    const signature = request.headers.get("x-signature");
+    const signature =
+      request.headers.get("x-signature");
 
-    const isValid = verifySignature(rawBody, signature, secret);
-
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid Lemon Squeezy signature." }, { status: 401 });
+    if (
+      !verifySignature(rawBody, signature, secret)
+    ) {
+      return NextResponse.json(
+        {
+          error: "Invalid Lemon Squeezy signature."
+        },
+        { status: 401 }
+      );
     }
 
     const payload = JSON.parse(rawBody) as LemonPayload;
-    const eventName = String(payload.meta?.event_name || "");
-    const attrs = payload.data?.attributes || {};
 
-    const customerEmail = getCustomerEmail(payload);
-    const customUserId = String(payload.meta?.custom_data?.user_id || "").trim();
+    const eventName = getTextValue(
+      payload.meta?.event_name
+    );
 
-    const userId = customUserId || (customerEmail ? await findUserIdByEmail(customerEmail) : null);
+    const attributes =
+      payload.data?.attributes ?? {};
+
+    const customerEmail =
+      getCustomerEmail(payload);
+
+    const customUserId = getTextValue(
+      payload.meta?.custom_data?.user_id
+    );
+
+    const userId =
+      customUserId ||
+      (customerEmail
+        ? await findUserIdByEmail(customerEmail)
+        : null);
 
     if (!userId) {
       return NextResponse.json({
         received: true,
-        warning: "No matching Supabase user found for Lemon Squeezy customer email.",
+        warning:
+          "No matching Supabase user was found.",
         customerEmail
       });
     }
 
-    const rawStatus = String(attrs.status || "active").toLowerCase();
-    const detectedPlan = getPlanFromPayload(payload);
+    const detectedPlan =
+      getPlanFromPayload(payload);
 
-    const finalPlan = shouldSetFreePlan(eventName, rawStatus) ? "free" : detectedPlan;
-    const finalStatus = shouldSetFreePlan(eventName, rawStatus) ? rawStatus || "inactive" : rawStatus || "active";
+    const status =
+      getTextValue(attributes.status)
+        .toLowerCase() || "active";
+
+    const endsAt =
+      getNullableValue(attributes.ends_at);
+
+    const hasEnded = subscriptionHasEnded(
+      eventName,
+      status,
+      endsAt
+    );
+
+    /*
+      A cancelled subscription remains on its paid plan
+      until ends_at. It becomes Free only after expiration.
+    */
+    const finalPlan: PlanId = hasEnded
+      ? "free"
+      : detectedPlan;
 
     const admin = createSupabaseAdmin();
 
-    await admin.from("subscriptions").upsert(
-      {
-        user_id: userId,
-        plan: finalPlan,
-        status: finalStatus,
-        lemon_customer_id: getCleanValue(attrs.customer_id),
-        lemon_subscription_id: getCleanValue(payload.data?.id || attrs.subscription_id),
-        lemon_order_id: getCleanValue(attrs.order_id),
-        lemon_product_id: getCleanValue(attrs.product_id),
-        lemon_variant_id: getCleanValue(attrs.variant_id),
-        current_period_start: getCleanValue(attrs.created_at),
-        current_period_end: getPeriodEnd(attrs),
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "user_id" }
-    );
+    const { error: upsertError } = await admin
+      .from("subscriptions")
+      .upsert(
+        {
+          user_id: userId,
+          plan: finalPlan,
+          status,
+          lemon_customer_id: getNullableValue(
+            attributes.customer_id
+          ),
+          lemon_subscription_id: getNullableValue(
+            payload.data?.id ||
+              attributes.subscription_id
+          ),
+          lemon_order_id: getNullableValue(
+            attributes.order_id
+          ),
+          lemon_product_id: getNullableValue(
+            attributes.product_id
+          ),
+          lemon_variant_id: getNullableValue(
+            attributes.variant_id
+          ),
+          current_period_start: getNullableValue(
+            attributes.created_at
+          ),
+          current_period_end:
+            getCurrentPeriodEnd(attributes),
+          updated_at: new Date().toISOString()
+        },
+        {
+          onConflict: "user_id"
+        }
+      );
+
+    if (upsertError) {
+      throw new Error(
+        `Subscription update failed: ${upsertError.message}`
+      );
+    }
 
     return NextResponse.json({
       received: true,
       eventName,
       userId,
       plan: finalPlan,
-      status: finalStatus
+      status,
+      accessEndsAt: endsAt
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Lemon Squeezy webhook failed.";
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Lemon Squeezy webhook failed.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error(
+      "Lemon Squeezy webhook error:",
+      error
+    );
+
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
