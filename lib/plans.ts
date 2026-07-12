@@ -10,9 +10,14 @@ export type PlanConfig = {
   monthlyPrice: number;
   meetingsPerMonth: number;
   monthlyMeetingLimit: number;
+
+  // Total users include the owner.
   users: number;
   userLimit: number;
+
+  // Number of sales staff accounts allowed.
   includedSalesUsers: number;
+
   features: string[];
 };
 
@@ -31,12 +36,15 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     includedSalesUsers: 0,
     features: [
       "5 smart meetings per month",
+      "1 owner account",
+      "No sales users",
       "Client memory CRM",
-      "Smart summaries",
+      "Smart meeting summaries",
       "Tasks and reminders",
       "Proposal builder"
     ]
   },
+
   starter: {
     key: "starter",
     id: "starter",
@@ -46,17 +54,20 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     monthlyPrice: 19,
     meetingsPerMonth: 20,
     monthlyMeetingLimit: 20,
-    users: 1,
-    userLimit: 1,
-    includedSalesUsers: 0,
+    users: 2,
+    userLimit: 2,
+    includedSalesUsers: 1,
     features: [
       "20 smart meetings per month",
+      "1 owner account",
+      "1 included sales user",
       "Client memory CRM",
       "Proposal builder",
       "Follow-up reminders",
       "Google Calendar reminder links"
     ]
   },
+
   pro: {
     key: "pro",
     id: "pro",
@@ -66,17 +77,21 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     monthlyPrice: 39,
     meetingsPerMonth: 80,
     monthlyMeetingLimit: 80,
-    users: 1,
-    userLimit: 1,
-    includedSalesUsers: 0,
+    users: 3,
+    userLimit: 3,
+    includedSalesUsers: 2,
     features: [
       "80 smart meetings per month",
+      "1 owner account",
+      "2 included sales users",
       "Lead scoring",
       "Lost lead rescue",
+      "Advanced proposal workflow",
       "Proposal follow-up workflow",
       "Priority workspace"
     ]
   },
+
   agency: {
     key: "agency",
     id: "agency",
@@ -86,24 +101,31 @@ export const PLANS: Record<PlanId, PlanConfig> = {
     monthlyPrice: 80,
     meetingsPerMonth: 300,
     monthlyMeetingLimit: 300,
-    users: 4,
-    userLimit: 4,
-    includedSalesUsers: 3,
+    users: 6,
+    userLimit: 6,
+    includedSalesUsers: 5,
     features: [
       "300 smart meetings per month",
-      "Owner workspace",
-      "3 included sales users",
+      "1 owner account",
+      "5 included sales users",
+      "Owner command center",
       "Sales team activity tracking",
       "Agency follow-up command center",
-      "Custom team add-on available"
+      "Team performance visibility"
     ]
   }
 };
 
 export function normalizePlan(plan?: string | null): PlanId {
-  const value = String(plan || "").toLowerCase();
+  const value = String(plan || "")
+    .trim()
+    .toLowerCase();
 
-  if (value === "starter" || value === "pro" || value === "agency") {
+  if (
+    value === "starter" ||
+    value === "pro" ||
+    value === "agency"
+  ) {
     return value;
   }
 
@@ -114,12 +136,41 @@ export function getPlanConfig(plan?: string | null): PlanConfig {
   return PLANS[normalizePlan(plan)];
 }
 
-export function getStripePriceId(plan?: string | null) {
+export function getMeetingLimit(plan?: string | null): number {
+  return getPlanConfig(plan).monthlyMeetingLimit;
+}
+
+export function getSalesUserLimit(plan?: string | null): number {
+  return getPlanConfig(plan).includedSalesUsers;
+}
+
+export function getTotalUserLimit(plan?: string | null): number {
+  return getPlanConfig(plan).userLimit;
+}
+
+/*
+  Temporary Stripe compatibility.
+
+  ClientPilot AI now uses Lemon Squeezy, but this function is being kept
+  temporarily so existing Stripe imports do not break the production build.
+
+  Remove this function only after all Stripe routes and imports have been
+  removed from the project.
+*/
+export function getStripePriceId(plan?: string | null): string {
   const normalized = normalizePlan(plan);
 
-  if (normalized === "starter") return process.env.STRIPE_STARTER_PRICE_ID || "";
-  if (normalized === "pro") return process.env.STRIPE_PRO_PRICE_ID || "";
-  if (normalized === "agency") return process.env.STRIPE_AGENCY_PRICE_ID || "";
+  if (normalized === "starter") {
+    return process.env.STRIPE_STARTER_PRICE_ID || "";
+  }
+
+  if (normalized === "pro") {
+    return process.env.STRIPE_PRO_PRICE_ID || "";
+  }
+
+  if (normalized === "agency") {
+    return process.env.STRIPE_AGENCY_PRICE_ID || "";
+  }
 
   return "";
 }

@@ -69,35 +69,61 @@ const features = [
 const pricingPlans = [
   {
     name: "Free",
-    price: "$0",
     subtitle: "Start testing",
-    features: ["5 smart meetings/month", "1 user", "Basic reminders", "Proposal drafts"],
+    price: "$0",
+    popular: false,
+    features: [
+      "5 smart meetings/month",
+      "1 owner account",
+      "No sales users",
+      "Basic reminders",
+      "Proposal drafts"
+    ],
     cta: "Start Free"
   },
   {
     name: "Starter",
-    price: "$19",
     subtitle: "For solo sellers",
-    features: ["20 smart meetings/month", "1 user", "Client dashboard", "Follow-up reminders"],
+    price: "$19",
+    popular: false,
+    features: [
+      "20 smart meetings/month",
+      "1 owner account",
+      "1 sales user",
+      "Client dashboard",
+      "Follow-up reminders"
+    ],
     cta: "Start Starter"
   },
   {
     name: "Pro",
+    subtitle: "For growing sales teams",
     price: "$39",
-    subtitle: "For growing sales work",
-    features: ["80 smart meetings/month", "1 user", "Advanced proposals", "Lost lead rescue"],
+    popular: true,
+    features: [
+      "80 smart meetings/month",
+      "1 owner account",
+      "2 sales users",
+      "Advanced proposals",
+      "Lost lead rescue"
+    ],
     cta: "Start Pro"
   },
   {
     name: "Agency",
-    price: "$80",
     subtitle: "For agencies and teams",
-    features: ["300 smart meetings/month", "Owner + 3 sales users", "Sales staff login", "Team activity tracking"],
-    cta: "Start Agency",
-    popular: true
+    price: "$80",
+    popular: false,
+    features: [
+      "300 smart meetings/month",
+      "1 owner account",
+      "5 sales users",
+      "Sales activity tracking",
+      "Agency command center"
+    ],
+    cta: "Start Agency"
   }
 ];
-
 export default function HomePage() {
   return (
     <main className="cp-landing">
