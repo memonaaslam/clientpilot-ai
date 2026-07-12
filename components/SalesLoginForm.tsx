@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -33,7 +33,7 @@ export function SalesLoginForm() {
         return;
       }
 
-      window.location.href = "/clientpilotai/sales/dashboard";
+      window.location.href = "/sales/dashboard";
     } catch {
       setError("Login failed. Please check Staff ID, PIN, and deployment.");
     } finally {

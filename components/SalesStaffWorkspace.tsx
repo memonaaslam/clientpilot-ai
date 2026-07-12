@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 
@@ -290,7 +290,7 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
 
   async function logout() {
     await fetch("/clientpilotai/api/sales-auth/logout", { method: "POST" });
-    window.location.href = "/clientpilotai/sales/login";
+    window.location.href = "/sales/login";
   }
 
   const heroTitle =
@@ -569,4 +569,5 @@ export function SalesStaffWorkspace({ staffName, staffId }: SalesStaffWorkspaceP
     </main>
   );
 }
+
 

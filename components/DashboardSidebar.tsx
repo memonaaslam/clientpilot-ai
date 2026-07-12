@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ const navItems = [
   { href: "/dashboard/follow-ups", label: "Follow-ups", icon: "F" },
   { href: "/dashboard/sales-team", label: "Sales Team", icon: "A" },
   { href: "/dashboard/sales-activity", label: "Sales Activity", icon: "SA" },
-  { href: "/clientpilotai/sales/login", label: "Sales Login", icon: "SL" },
+  { href: "/sales/login", label: "Sales Login", icon: "SL" },
   { href: "/dashboard/proposals", label: "Proposals", icon: "P" },
   { href: "/dashboard/proposal-pdf", label: "Proposal PDF", icon: "PDF" },
   { href: "/dashboard/recycle-bin", label: "Recycle Bin", icon: "B" },
@@ -69,7 +69,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
       <div className="sidebar-bottom">
         <div className="sidebar-dev-card">
           <strong>ClientPilot AI</strong>
-          <small className="sidebar-product-line">Smart CRM • Follow-up Automation • Proposal Workflow</small>
+          <small className="sidebar-product-line">Smart CRM â€¢ Follow-up Automation â€¢ Proposal Workflow</small>
 
           <div className="sidebar-dev-line" />
 
@@ -87,6 +87,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
     </aside>
   );
 }
+
 
 
 

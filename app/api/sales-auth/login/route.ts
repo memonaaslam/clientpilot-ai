@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createSalesSession, createSupabaseAdminClient, hashValue } from "@/lib/sales-session";
 
 export const runtime = "nodejs";
@@ -44,10 +44,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      redirectTo: "/clientpilotai/sales/dashboard"
+      redirectTo: "/sales/dashboard"
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to login.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
