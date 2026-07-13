@@ -7136,8 +7136,8 @@ li {
   --cp-green: #18794e;
   --cp-green-soft: rgba(24, 121, 78, 0.1);
 
-  --cp-blue: #2367d1;
-  --cp-blue-soft: rgba(35, 103, 209, 0.1);
+  --cp-blue: #8f7440;
+--cp-blue-soft: rgba(143, 116, 64, 0.1);
 
   --cp-red: #c23434;
   --cp-red-soft: rgba(194, 52, 52, 0.1);
@@ -7892,7 +7892,7 @@ body {
   left: -100px;
   bottom: -170px;
   border-radius: 999px;
-  background: rgba(35, 103, 209, 0.06);
+  background: rgba(200, 164, 90, 0.08);
   pointer-events: none;
 }
 
