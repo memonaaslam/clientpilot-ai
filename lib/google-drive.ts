@@ -200,3 +200,178 @@ export function decryptRefreshToken(
 
   return decrypted.toString("utf8");
 }
+const GOOGLE_DRIVE_FILES_URL =
+  "https://www.googleapis.com/drive/v3/files";
+
+const GOOGLE_DRIVE_UPLOAD_URL =
+  "https://www.googleapis.com/upload/drive/v3/files";
+
+export async function refreshGoogleAccessToken(
+  refreshToken: string
+): Promise<{
+  accessToken: string;
+  expiresIn: number;
+}> {
+  const response = await fetch(
+    "https://oauth2.googleapis.com/token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        client_id: requireEnv(
+          "GOOGLE_DRIVE_CLIENT_ID"
+        ),
+        client_secret: requireEnv(
+          "GOOGLE_DRIVE_CLIENT_SECRET"
+        ),
+        refresh_token: refreshToken,
+        grant_type: "refresh_token"
+      })
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error_description ||
+        data.error ||
+        "Unable to refresh Google access token."
+    );
+  }
+
+  return {
+    accessToken: String(data.access_token),
+    expiresIn: Number(data.expires_in || 3600)
+  };
+}
+
+export async function findOrCreateBackupFolder(
+  accessToken: string,
+  folderName: string
+): Promise<string> {
+  const query = encodeURIComponent(
+    `name='${folderName.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
+  );
+
+  const searchResponse = await fetch(
+    `${GOOGLE_DRIVE_FILES_URL}?q=${query}&fields=files(id,name)&spaces=drive`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    }
+  );
+
+  const searchData = await searchResponse.json();
+
+  if (!searchResponse.ok) {
+    throw new Error(
+      searchData.error?.message ||
+        "Unable to search Google Drive folders."
+    );
+  }
+
+  if (searchData.files?.[0]?.id) {
+    return String(searchData.files[0].id);
+  }
+
+  const createResponse = await fetch(
+    GOOGLE_DRIVE_FILES_URL,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: folderName,
+        mimeType:
+          "application/vnd.google-apps.folder"
+      })
+    }
+  );
+
+  const createData = await createResponse.json();
+
+  if (!createResponse.ok) {
+    throw new Error(
+      createData.error?.message ||
+        "Unable to create Google Drive backup folder."
+    );
+  }
+
+  return String(createData.id);
+}
+
+export async function uploadJsonBackup(
+  accessToken: string,
+  folderId: string,
+  fileName: string,
+  backupData: unknown
+): Promise<{
+  fileId: string;
+  fileName: string;
+  sizeBytes: number;
+}> {
+  const jsonText = JSON.stringify(
+    backupData,
+    null,
+    2
+  );
+
+  const boundary = `clientpilot_${crypto
+    .randomBytes(16)
+    .toString("hex")}`;
+
+  const metadata = JSON.stringify({
+    name: fileName,
+    parents: [folderId],
+    mimeType: "application/json"
+  });
+
+  const multipartBody = [
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    metadata,
+    `--${boundary}`,
+    "Content-Type: application/json",
+    "",
+    jsonText,
+    `--${boundary}--`
+  ].join("\r\n");
+
+  const response = await fetch(
+    `${GOOGLE_DRIVE_UPLOAD_URL}?uploadType=multipart&fields=id,name`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`
+      },
+      body: multipartBody
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error?.message ||
+        "Unable to upload Google Drive backup."
+    );
+  }
+
+  return {
+    fileId: String(data.id),
+    fileName: String(data.name || fileName),
+    sizeBytes: Buffer.byteLength(
+      jsonText,
+      "utf8"
+    )
+  };
+}
