@@ -1,6 +1,5 @@
 import { DashboardShell } from "@/components/DashboardShell";
-import { SmartMeetingUpload } from "@/components/SmartMeetingUpload";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { RecorderUploader } from "@/components/RecorderUploader";import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 type ClientOption = {
   id: string;
@@ -59,7 +58,7 @@ export default async function UploadPage() {
           <span className="badge">Smart Meeting Workflow</span>
           <h1 style={{ fontSize: 46 }}>Upload Meeting</h1>
           <p className="muted">
-            Paste meeting notes and create a smart summary, follow-up tasks, proposal points, and reminders.
+            Upload or record a meeting. ClientPilot AI will transcribe it, generate a summary, create tasks, reminders, proposal points, and update the client timeline automatically.
           </p>
         </div>
 
@@ -69,7 +68,7 @@ export default async function UploadPage() {
         </div>
       </div>
 
-      <SmartMeetingUpload clients={clientRows} />
+      <RecorderUploader clients={clientRows} />
     </DashboardShell>
   );
 }
