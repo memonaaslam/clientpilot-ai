@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import { DashboardShell } from "@/components/DashboardShell";
 import { SettingsLogoutPanel } from "@/components/SettingsLogoutPanel";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+import { GoogleDriveBackupButton } from "@/components/GoogleDriveBackupButton";
 
 function createSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -447,13 +448,7 @@ export default async function SettingsPage({
                 Now and Disconnect actions.
               </p>
 
-              <button
-                className="btn gold"
-                type="button"
-                disabled
-              >
-                Back Up Now — Next Step
-              </button>
+              <GoogleDriveBackupButton />
             </div>
           </div>
         ) : (
