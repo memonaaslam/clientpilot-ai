@@ -8559,3 +8559,875 @@ body {
     grid-column: 2;
   }
 }
+/* =========================================================
+   CLIENTPILOT AI — MAKZORA CLIENTS
+   ========================================================= */
+
+.cp-clients-hero,
+.cp-client-profile-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 34px;
+  border: 1px solid var(--cp-line);
+  border-radius: var(--cp-radius-xl);
+  background:
+    radial-gradient(circle at 92% 8%, rgba(200, 164, 90, 0.2), transparent 30%),
+    linear-gradient(135deg, #ffffff, #faf7ef);
+  box-shadow: var(--cp-shadow-md);
+}
+
+.cp-clients-hero h1,
+.cp-client-profile-hero h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.cp-clients-hero p,
+.cp-client-profile-hero p {
+  margin: 0;
+  color: var(--cp-text-soft);
+  line-height: 1.7;
+}
+
+.cp-clients-total {
+  display: flex;
+  width: 150px;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid rgba(200, 164, 90, 0.24);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.cp-clients-total strong {
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.cp-clients-total span {
+  margin-top: 8px;
+  color: var(--cp-text-soft);
+  font-size: 12px;
+}
+
+.cp-clients-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.75fr) minmax(0, 1.25fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.cp-add-client-card {
+  position: sticky;
+  top: 24px;
+}
+
+.cp-client-directory {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.cp-client-card {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 15px;
+  align-items: center;
+  min-height: 104px;
+  padding: 16px;
+  border: 1px solid var(--cp-line);
+  border-radius: 20px;
+  background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform var(--cp-transition),
+    box-shadow var(--cp-transition),
+    border-color var(--cp-transition);
+}
+
+.cp-client-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(200, 164, 90, 0.5);
+  box-shadow: var(--cp-shadow-md);
+}
+
+.cp-client-avatar,
+.cp-profile-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #161616, #2b2418);
+  color: var(--cp-gold);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.cp-client-avatar {
+  width: 54px;
+  height: 54px;
+  font-size: 16px;
+}
+
+.cp-client-card-body {
+  min-width: 0;
+}
+
+.cp-client-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.cp-client-card-head strong {
+  display: block;
+  font-size: 15px;
+}
+
+.cp-client-card-head span:not(.cp-status-badge) {
+  display: block;
+  margin-top: 4px;
+  color: var(--cp-text-soft);
+  font-size: 12px;
+}
+
+.cp-client-contact-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  color: var(--cp-text-light);
+  font-size: 11px;
+}
+
+.cp-client-open {
+  color: var(--cp-gold-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cp-client-profile-hero {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+}
+
+.cp-profile-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 28px;
+  font-size: 25px;
+}
+
+.cp-profile-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.cp-profile-contact-strip {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  color: var(--cp-text-soft);
+  font-size: 12px;
+}
+
+.cp-profile-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 170px;
+}
+
+.cp-profile-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cp-profile-metric-grid article {
+  min-height: 126px;
+  padding: 20px;
+  border: 1px solid var(--cp-line);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: var(--cp-shadow-sm);
+}
+
+.cp-profile-metric-grid span {
+  display: block;
+  color: var(--cp-text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cp-profile-metric-grid strong {
+  display: block;
+  margin-top: 22px;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.cp-client-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.cp-client-next-action {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  gap: 15px;
+  align-items: start;
+  padding: 20px;
+  border: 1px solid rgba(200, 164, 90, 0.26);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffdf8, #f8f1e3);
+}
+
+.cp-client-next-action > span {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border-radius: 17px;
+  background: var(--cp-gold-soft);
+  color: var(--cp-gold-dark);
+  font-size: 20px;
+}
+
+.cp-client-next-action strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.cp-client-next-action p {
+  margin: 7px 0 0;
+  color: var(--cp-text-soft);
+  line-height: 1.65;
+}
+
+.cp-profile-action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.cp-client-context {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cp-client-context div {
+  min-height: 90px;
+  padding: 15px;
+  border: 1px solid var(--cp-line);
+  border-radius: 17px;
+  background: #ffffff;
+}
+
+.cp-client-context span {
+  display: block;
+  color: var(--cp-text-soft);
+  font-size: 11px;
+}
+
+.cp-client-context strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.cp-client-notes-box {
+  margin-top: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: #111111;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.7;
+}
+
+.cp-profile-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-profile-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 78px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cp-line);
+}
+
+.cp-profile-list article:last-child {
+  border-bottom: 0;
+}
+
+.cp-profile-list strong {
+  display: block;
+  font-size: 13px;
+}
+
+.cp-profile-list p {
+  max-width: 560px;
+  margin: 5px 0 0;
+  color: var(--cp-text-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.cp-profile-list small {
+  color: var(--cp-text-light);
+  white-space: nowrap;
+}
+
+.cp-client-activity-timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-client-activity-timeline article {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  min-height: 82px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cp-line);
+}
+
+.cp-client-activity-timeline article:last-child {
+  border-bottom: 0;
+}
+
+.cp-client-activity-dot {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 15px;
+  background: var(--cp-gold-soft);
+  color: var(--cp-gold-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.cp-client-activity-timeline span {
+  display: block;
+  color: var(--cp-gold-dark);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cp-client-activity-timeline strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.cp-client-activity-timeline small {
+  display: block;
+  margin-top: 5px;
+  color: var(--cp-text-light);
+}
+
+@media (max-width: 1080px) {
+  .cp-clients-layout,
+  .cp-client-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-add-client-card {
+    position: static;
+  }
+
+  .cp-client-profile-hero {
+    grid-template-columns: 76px 1fr;
+  }
+
+  .cp-profile-avatar {
+    width: 76px;
+    height: 76px;
+  }
+
+  .cp-profile-hero-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+  }
+
+  .cp-profile-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .cp-clients-hero,
+  .cp-client-profile-hero {
+    align-items: flex-start;
+    padding: 24px;
+  }
+
+  .cp-clients-hero {
+    flex-direction: column;
+  }
+
+  .cp-clients-total {
+    width: 100%;
+  }
+
+  .cp-client-card {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .cp-client-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .cp-client-open {
+    grid-column: 2;
+  }
+
+  .cp-client-card-head {
+    flex-direction: column;
+  }
+
+  .cp-profile-title-row {
+    flex-direction: column;
+  }
+
+  .cp-profile-hero-actions {
+    flex-direction: column;
+  }
+
+  .cp-profile-metric-grid,
+  .cp-client-context {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-client-activity-timeline article {
+    grid-template-columns: 38px 1fr;
+  }
+
+  .cp-client-activity-timeline article .cp-status-badge {
+    grid-column: 2;
+  }
+}
+/* =========================================================
+   FINAL MAKZORA BRAND OVERRIDE
+   Keep this block at the absolute bottom of globals.css
+   ========================================================= */
+
+:root {
+  --bg: #f5f3ee;
+  --panel: #ffffff;
+  --panel2: #faf8f3;
+  --text: #111111;
+  --muted: #6f6a60;
+  --gold: #c8a45a;
+  --blue: #c8a45a;
+  --line: rgba(17, 17, 17, 0.09);
+  --danger: #c23434;
+
+  --brand: #c8a45a;
+  --brand-2: #a67c32;
+  --page-bg: #f5f3ee;
+  --surface: #ffffff;
+  --surface-soft: #faf8f3;
+  --text-main: #111111;
+  --text-muted: #6f6a60;
+  --border-soft: #e8e2d6;
+
+  --cp-bg: #f5f3ee;
+  --cp-bg-soft: #faf8f3;
+  --cp-surface: rgba(255, 255, 255, 0.96);
+  --cp-surface-solid: #ffffff;
+  --cp-surface-dark: #111111;
+  --cp-text: #111111;
+  --cp-text-soft: #6f6a60;
+  --cp-text-light: #9b9589;
+  --cp-line: rgba(17, 17, 17, 0.09);
+  --cp-line-strong: rgba(17, 17, 17, 0.15);
+
+  --cp-gold: #c8a45a;
+  --cp-gold-dark: #98712c;
+  --cp-gold-soft: rgba(200, 164, 90, 0.14);
+  --cp-gold-glow: rgba(200, 164, 90, 0.24);
+
+  --cp-blue: #a67c32;
+  --cp-blue-soft: rgba(166, 124, 50, 0.1);
+}
+
+html,
+body,
+.shell,
+.main {
+  background: var(--cp-bg) !important;
+  color: var(--cp-text) !important;
+}
+
+.sidebar {
+  background: #111111 !important;
+  border-right: 1px solid rgba(200, 164, 90, 0.18) !important;
+  box-shadow: 14px 0 45px rgba(0, 0, 0, 0.12) !important;
+}
+
+.side-title,
+.sidebar strong,
+.sidebar h1,
+.sidebar h2,
+.sidebar h3 {
+  color: #ffffff !important;
+}
+
+.side-title span {
+  color: var(--cp-gold) !important;
+}
+
+.side-nav a {
+  color: rgba(255, 255, 255, 0.7) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.side-nav a:hover,
+.side-nav a.active {
+  color: #ffffff !important;
+  background: rgba(200, 164, 90, 0.13) !important;
+  border-color: rgba(200, 164, 90, 0.2) !important;
+}
+
+.sidebar-bottom,
+.sidebar-legal-links {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.sidebar-legal-links a {
+  color: rgba(255, 255, 255, 0.62) !important;
+}
+
+.sidebar-legal-links a:hover {
+  color: var(--cp-gold) !important;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.logout-btn:hover {
+  background: rgba(200, 164, 90, 0.13) !important;
+  border-color: rgba(200, 164, 90, 0.22) !important;
+}
+
+.card,
+.empty-state,
+.meeting-card,
+.proposal-card,
+.client-card,
+.stat-card,
+.hero-mini-card,
+.subscription-usage-card,
+.current-plan-clean,
+.pricing-card-clean,
+.cp-premium-card,
+.cp-metric-card,
+.cp-score-card,
+.cp-result-card,
+.cp-client-card,
+.cp-profile-metric-grid article {
+  background: #ffffff !important;
+  border-color: var(--cp-line) !important;
+  color: var(--cp-text) !important;
+  box-shadow: 0 16px 45px rgba(17, 17, 17, 0.07) !important;
+}
+
+.badge,
+.cp-eyebrow,
+.pill,
+.cp-status-gold {
+  background: var(--cp-gold-soft) !important;
+  border-color: rgba(200, 164, 90, 0.25) !important;
+  color: var(--cp-gold-dark) !important;
+}
+
+.btn.gold,
+.cp-button-gold,
+.login-submit-clean,
+.cp-primary-btn,
+.cp-nav-cta {
+  background: linear-gradient(
+    135deg,
+    #d9bc79,
+    #a77c31
+  ) !important;
+  color: #15100a !important;
+  border: 0 !important;
+  box-shadow: 0 14px 32px rgba(166, 124, 50, 0.24) !important;
+}
+
+.btn.secondary,
+.cp-button-soft {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid var(--cp-line) !important;
+}
+
+.cp-button-dark {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+.input,
+.textarea,
+.select,
+.cp-input,
+.cp-select,
+.cp-textarea,
+input,
+textarea,
+select {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: var(--cp-line) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9b9589 !important;
+}
+
+a {
+  color: inherit;
+}
+
+.main a:hover {
+  color: var(--cp-gold-dark);
+}
+
+.cp-page-intro,
+.cp-dashboard-hero,
+.cp-clients-hero,
+.cp-client-profile-hero,
+.cp-meeting-input-head,
+.cp-results-hero {
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      rgba(200, 164, 90, 0.2),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #faf7ef
+    ) !important;
+}
+
+.cp-meeting-preview-panel,
+.cp-score-card-main,
+.cp-client-notes-box,
+.cp-meeting-submit-row {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+/* =========================================================
+   MAKZORA DASHBOARD BRAND RESET
+   Only affects dashboard pages
+   ========================================================= */
+
+.shell-premium {
+  --cp-bg: #f5f3ee;
+  --cp-bg-soft: #faf8f3;
+  --cp-surface: rgba(255, 255, 255, 0.96);
+  --cp-surface-solid: #ffffff;
+  --cp-surface-dark: #111111;
+
+  --cp-text: #111111;
+  --cp-text-soft: #6f6a60;
+  --cp-text-light: #9b9589;
+
+  --cp-line: rgba(17, 17, 17, 0.09);
+  --cp-line-strong: rgba(17, 17, 17, 0.15);
+
+  --cp-gold: #c8a45a;
+  --cp-gold-dark: #98712c;
+  --cp-gold-soft: rgba(200, 164, 90, 0.14);
+  --cp-gold-glow: rgba(200, 164, 90, 0.24);
+
+  --cp-blue: #b48a3f;
+  --cp-blue-soft: rgba(180, 138, 63, 0.11);
+
+  --brand: #c8a45a;
+  --brand-2: #98712c;
+  --gold: #c8a45a;
+}
+
+.shell-premium,
+.main-premium {
+  background: #f5f3ee !important;
+  color: #111111 !important;
+}
+
+/* Black Makzora sidebar */
+
+.shell-premium .sidebar {
+  background: #111111 !important;
+  border-right: 1px solid rgba(200, 164, 90, 0.18) !important;
+  box-shadow: 12px 0 42px rgba(0, 0, 0, 0.12) !important;
+}
+
+.shell-premium .side-title,
+.shell-premium .sidebar strong,
+.shell-premium .sidebar h1,
+.shell-premium .sidebar h2,
+.shell-premium .sidebar h3 {
+  color: #ffffff !important;
+}
+
+.shell-premium .side-title span {
+  color: #c8a45a !important;
+}
+
+.shell-premium .side-nav a {
+  color: rgba(255, 255, 255, 0.68) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.shell-premium .side-nav a:hover,
+.shell-premium .side-nav a.active {
+  color: #ffffff !important;
+  background: rgba(200, 164, 90, 0.13) !important;
+  border-color: rgba(200, 164, 90, 0.2) !important;
+}
+
+.shell-premium .sidebar-legal-links a {
+  color: rgba(255, 255, 255, 0.58) !important;
+}
+
+.shell-premium .sidebar-legal-links a:hover {
+  color: #c8a45a !important;
+}
+
+.shell-premium .logout-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Dashboard cards */
+
+.main-premium .cp-premium-card,
+.main-premium .cp-metric-card,
+.main-premium .cp-score-card,
+.main-premium .cp-result-card,
+.main-premium .cp-client-card,
+.main-premium .cp-profile-metric-grid article {
+  background: #ffffff !important;
+  border-color: rgba(17, 17, 17, 0.09) !important;
+  color: #111111 !important;
+  box-shadow: 0 16px 45px rgba(17, 17, 17, 0.07) !important;
+}
+
+/* Makzora hero sections */
+
+.main-premium .cp-dashboard-hero,
+.main-premium .cp-clients-hero,
+.main-premium .cp-client-profile-hero,
+.main-premium .cp-meeting-input-head,
+.main-premium .cp-results-hero {
+  background:
+    radial-gradient(
+      circle at 92% 8%,
+      rgba(200, 164, 90, 0.2),
+      transparent 32%
+    ),
+    linear-gradient(
+      135deg,
+      #ffffff,
+      #faf7ef
+    ) !important;
+}
+
+/* Gold labels and buttons */
+
+.main-premium .cp-eyebrow,
+.main-premium .badge,
+.main-premium .cp-status-gold {
+  background: rgba(200, 164, 90, 0.14) !important;
+  border-color: rgba(200, 164, 90, 0.25) !important;
+  color: #98712c !important;
+}
+
+.main-premium .cp-button-gold,
+.main-premium .btn.gold {
+  background: linear-gradient(
+    135deg,
+    #d9bc79,
+    #a77c31
+  ) !important;
+  color: #15100a !important;
+  border: 0 !important;
+  box-shadow: 0 14px 32px rgba(166, 124, 50, 0.24) !important;
+}
+
+.main-premium .cp-button-dark {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
+
+.main-premium .cp-button-soft {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(17, 17, 17, 0.1) !important;
+}
+
+/* Dashboard inputs */
+
+.main-premium .cp-input,
+.main-premium .cp-select,
+.main-premium .cp-textarea {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-color: rgba(17, 17, 17, 0.1) !important;
+}
+
+.main-premium .cp-input:focus,
+.main-premium .cp-select:focus,
+.main-premium .cp-textarea:focus {
+  border-color: rgba(200, 164, 90, 0.75) !important;
+  box-shadow: 0 0 0 4px rgba(200, 164, 90, 0.14) !important;
+}
+
+/* Premium black panels */
+
+.main-premium .cp-meeting-preview-panel,
+.main-premium .cp-score-card-main,
+.main-premium .cp-client-notes-box,
+.main-premium .cp-meeting-submit-row {
+  background: #111111 !important;
+  color: #ffffff !important;
+}
