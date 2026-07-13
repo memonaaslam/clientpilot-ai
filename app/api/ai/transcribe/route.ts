@@ -1,22 +1,152 @@
+import OpenAI, { toFile } from "openai";
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { getPlanLimitStatus } from "@/lib/subscription";
+
 import { createSmartMeetingResult } from "@/lib/smart-meeting";
+import { getPlanLimitStatus } from "@/lib/subscription";
+import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
-async function getTextFromFile(file: File) {
+const MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024;
+
+const SUPPORTED_AUDIO_EXTENSIONS = [
+  ".mp3",
+  ".mp4",
+  ".mpeg",
+  ".mpga",
+  ".m4a",
+  ".wav",
+  ".webm"
+];
+
+const SUPPORTED_AUDIO_TYPES = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/m4a",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/webm",
+  "video/mp4",
+  "video/webm"
+];
+
+function createOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY is missing. Add it to .env.local and Vercel."
+    );
+  }
+
+  return new OpenAI({ apiKey });
+}
+
+function isFile(
+  value: FormDataEntryValue | null
+): value is File {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    "arrayBuffer" in value &&
+    "size" in value &&
+    "name" in value
+  );
+}
+
+function getFileExtension(fileName: string) {
+  const index = fileName.lastIndexOf(".");
+
+  return index === -1
+    ? ""
+    : fileName.slice(index).toLowerCase();
+}
+
+function isTextFile(file: File) {
   const fileName = file.name.toLowerCase();
 
-  if (
+  return (
     file.type.startsWith("text/") ||
     fileName.endsWith(".txt") ||
     fileName.endsWith(".md")
-  ) {
-    return await file.text();
+  );
+}
+
+function isSupportedAudioFile(file: File) {
+  const extension = getFileExtension(file.name);
+
+  return (
+    SUPPORTED_AUDIO_EXTENSIONS.includes(extension) ||
+    SUPPORTED_AUDIO_TYPES.includes(file.type)
+  );
+}
+
+async function getTextFromTextFile(file: File) {
+  if (!isTextFile(file)) {
+    return "";
   }
 
-  return "";
+  return (await file.text()).trim();
+}
+
+async function transcribeAudioFile(file: File) {
+  if (file.size <= 0) {
+    throw new Error(
+      "The selected audio file is empty."
+    );
+  }
+
+  if (file.size > MAX_AUDIO_SIZE_BYTES) {
+    throw new Error(
+      "Audio file is larger than 25 MB. Please compress it or upload a shorter recording."
+    );
+  }
+
+  if (!isSupportedAudioFile(file)) {
+    throw new Error(
+      "Unsupported audio format. Please use MP3, MP4, MPEG, MPGA, M4A, WAV, or WEBM."
+    );
+  }
+
+  const openai = createOpenAIClient();
+
+  const buffer = Buffer.from(
+    await file.arrayBuffer()
+  );
+
+  const uploadFile = await toFile(
+    buffer,
+    file.name || "meeting-audio.mp3",
+    {
+      type: file.type || "audio/mpeg"
+    }
+  );
+
+  const model =
+    process.env.OPENAI_TRANSCRIPTION_MODEL?.trim() ||
+    "gpt-4o-transcribe";
+
+  const transcription =
+    await openai.audio.transcriptions.create({
+      file: uploadFile,
+      model,
+      response_format: "json"
+    });
+
+  const transcript =
+    transcription.text?.trim();
+
+  if (!transcript) {
+    throw new Error(
+      "The audio was processed, but no speech could be transcribed."
+    );
+  }
+
+  return transcript;
 }
 
 function createTaskDueDate(index: number) {
@@ -32,19 +162,79 @@ function createTaskDueDate(index: number) {
   return date.toISOString();
 }
 
+async function createTimelineEntry({
+  supabase,
+  userId,
+  clientId,
+  meetingId,
+  title
+}: {
+  supabase: Awaited<
+    ReturnType<typeof createSupabaseServerClient>
+  >;
+  userId: string;
+  clientId: string | null;
+  meetingId: string | null;
+  title: string;
+}) {
+  if (!clientId) {
+    return;
+  }
+
+  const payload: Record<string, unknown> = {
+    user_id: userId,
+    client_id: clientId,
+    event_type: "meeting_uploaded",
+    title: "Meeting uploaded",
+    description: `AI transcription completed for: ${title}`,
+    related_id: meetingId,
+    created_at: new Date().toISOString()
+  };
+
+  const firstAttempt = await supabase
+    .from("client_timeline")
+    .insert(payload as never);
+
+  if (!firstAttempt.error) {
+    return;
+  }
+
+  const fallbackPayload: Record<
+    string,
+    unknown
+  > = {
+    user_id: userId,
+    client_id: clientId,
+    type: "meeting_uploaded",
+    title: "Meeting uploaded",
+    description: `AI transcription completed for: ${title}`,
+    meeting_id: meetingId,
+    created_at: new Date().toISOString()
+  };
+
+  await supabase
+    .from("client_timeline")
+    .insert(fallbackPayload as never);
+}
+
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase =
+      await createSupabaseServerClient();
 
     const {
       data: { user }
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.json({ error: "Please login first." }, { status: 401 });
+      return NextResponse.json(
+        { error: "Please login first." },
+        { status: 401 }
+      );
     }
 
-    const limitStatus = await getPlanLimitStatus(user.id);
+    const limitStatus =
+      await getPlanLimitStatus(user.id);
 
     if (!limitStatus.allowed) {
       return NextResponse.json(
@@ -58,54 +248,97 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
+    const formData =
+      await request.formData();
 
     const title =
-      String(formData.get("title") || formData.get("meetingTitle") || "").trim() ||
-      "Client Meeting";
+      String(
+        formData.get("title") ||
+          formData.get("meetingTitle") ||
+          ""
+      ).trim() || "Client Meeting";
 
-    const clientId = String(formData.get("clientId") || formData.get("client_id") || "").trim();
+    const clientId =
+      String(
+        formData.get("clientId") ||
+          formData.get("client_id") ||
+          ""
+      ).trim() || null;
 
-    let notes = String(
-      formData.get("transcript") || formData.get("notes") || formData.get("content") || ""
+    let transcript = String(
+      formData.get("transcript") ||
+        formData.get("notes") ||
+        formData.get("content") ||
+        ""
     ).trim();
 
-    const fileValue = formData.get("file") || formData.get("audio");
+    const fileValue =
+      formData.get("file") ||
+      formData.get("audio");
 
-    if (!notes && fileValue && typeof fileValue === "object" && "size" in fileValue) {
-      notes = await getTextFromFile(fileValue as File);
+    let transcriptionSource:
+      | "pasted-notes"
+      | "text-file"
+      | "audio-ai" = "pasted-notes";
+
+    if (!transcript && isFile(fileValue)) {
+      if (isTextFile(fileValue)) {
+        transcript =
+          await getTextFromTextFile(fileValue);
+
+        transcriptionSource = "text-file";
+      } else {
+        transcript =
+          await transcribeAudioFile(fileValue);
+
+        transcriptionSource = "audio-ai";
+      }
     }
 
-    if (!notes) {
+    if (!transcript) {
       return NextResponse.json(
         {
-          error: "Please paste meeting notes first."
+          error:
+            "Please upload an audio file or paste meeting notes."
         },
         { status: 400 }
       );
     }
 
-    const smart = createSmartMeetingResult(title, notes);
+    const smart =
+      createSmartMeetingResult(
+        title,
+        transcript
+      );
 
-    const basePayload: Record<string, any> = {
+    const basePayload: Record<
+      string,
+      unknown
+    > = {
       user_id: user.id,
       title,
-      transcript: notes
+      transcript
     };
 
     if (clientId) {
       basePayload.client_id = clientId;
     }
 
-    let insertPayload: Record<string, any> = {
+    let insertPayload: Record<
+      string,
+      unknown
+    > = {
       ...basePayload,
       summary: smart.summary,
       action_items: smart.actionItems
     };
 
-    let { data: meeting, error } = await supabase
+    let {
+      data: meeting,
+      error
+    } = await supabase
       .from("meetings")
-      .insert(insertPayload)
+      .insert(insertPayload as never)
       .select("*")
       .single();
 
@@ -117,7 +350,7 @@ export async function POST(request: Request) {
 
       const retry = await supabase
         .from("meetings")
-        .insert(insertPayload)
+        .insert(insertPayload as never)
         .select("*")
         .single();
 
@@ -130,7 +363,7 @@ export async function POST(request: Request) {
 
       const retry = await supabase
         .from("meetings")
-        .insert(insertPayload)
+        .insert(insertPayload as never)
         .select("*")
         .single();
 
@@ -139,66 +372,139 @@ export async function POST(request: Request) {
     }
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
 
-    const meetingId = meeting?.id ? String(meeting.id) : "";
+    const meetingId =
+      meeting &&
+      typeof meeting === "object" &&
+      "id" in meeting &&
+      meeting.id
+        ? String(meeting.id)
+        : null;
 
-    const taskRows = smart.actionItems.map((item, index) => ({
-      user_id: user.id,
-      client_id: clientId || null,
-      meeting_id: meetingId || null,
-      title: item,
-      status: "pending",
-      priority: index === 0 ? "high" : "medium",
-      due_at: createTaskDueDate(index),
-      source: "meeting",
-      notes: `Auto-created from meeting: ${title}`
-    }));
+    const taskRows =
+      smart.actionItems.map(
+        (item, index) => ({
+          user_id: user.id,
+          client_id: clientId,
+          meeting_id: meetingId,
+          title: item,
+          status: "pending",
+          priority:
+            index === 0
+              ? "high"
+              : "medium",
+          due_at:
+            createTaskDueDate(index),
+          source: "meeting",
+          notes:
+            `Auto-created from meeting: ${title}`
+        })
+      );
 
-    let createdTasks: any[] = [];
+    let createdTasks: Record<
+      string,
+      unknown
+    >[] = [];
 
-    const taskInsert = await supabase
-      .from("tasks")
-      .insert(taskRows)
-      .select("*");
+    if (taskRows.length > 0) {
+      const taskInsert = await supabase
+        .from("tasks")
+        .insert(taskRows as never)
+        .select("*");
 
-    if (!taskInsert.error) {
-      createdTasks = taskInsert.data || [];
+      if (!taskInsert.error) {
+        createdTasks =
+          (taskInsert.data || []) as Record<
+            string,
+            unknown
+          >[];
+      }
     }
+
+    await createTimelineEntry({
+      supabase,
+      userId: user.id,
+      clientId,
+      meetingId,
+      title
+    });
 
     return NextResponse.json({
       success: true,
       meeting,
       meetingId,
-      transcript: notes,
+      transcript,
+      transcriptionSource,
+      transcriptionModel:
+        transcriptionSource === "audio-ai"
+          ? process.env
+              .OPENAI_TRANSCRIPTION_MODEL ||
+            "gpt-4o-transcribe"
+          : null,
       summary: smart.summary,
       actionItems: smart.actionItems,
       tasks: createdTasks,
-      tasksCreated: createdTasks.length,
+      tasksCreated:
+        createdTasks.length,
       followUp: smart.followUp,
-      proposalPoints: smart.proposalPoints,
+      proposalPoints:
+        smart.proposalPoints,
       autopilot: {
-        temperature: smart.temperature,
+        temperature:
+          smart.temperature,
         score: smart.score,
         stage: smart.stage,
-        nextBestAction: smart.nextBestAction,
-        whatsappMessage: smart.whatsappMessage,
-        emailMessage: smart.emailMessage,
-        automationPlan: smart.automationPlan,
-        missingInfo: smart.missingInfo,
-        dealSignals: smart.dealSignals,
-        riskSignals: smart.riskSignals
+        nextBestAction:
+          smart.nextBestAction,
+        whatsappMessage:
+          smart.whatsappMessage,
+        emailMessage:
+          smart.emailMessage,
+        automationPlan:
+          smart.automationPlan,
+        missingInfo:
+          smart.missingInfo,
+        dealSignals:
+          smart.dealSignals,
+        riskSignals:
+          smart.riskSignals
       },
-      aiMode: "smart-free",
-      usage: limitStatus.usage + 1,
-      limit: limitStatus.limit,
-      remaining: Math.max(limitStatus.limit - limitStatus.usage - 1, 0),
-      plan: limitStatus.subscription.plan
+      aiMode:
+        transcriptionSource === "audio-ai"
+          ? "openai-transcription"
+          : "smart-notes",
+      usage:
+        limitStatus.usage + 1,
+      limit:
+        limitStatus.limit,
+      remaining: Math.max(
+        limitStatus.limit -
+          limitStatus.usage -
+          1,
+        0
+      ),
+      plan:
+        limitStatus.subscription.plan
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to process meeting.";
+    console.error(
+      "Meeting transcription error:",
+      error
+    );
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to process meeting.";
+
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
   }
 }
