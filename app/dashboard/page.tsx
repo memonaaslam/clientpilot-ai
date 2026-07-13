@@ -1,6 +1,16 @@
 import Link from "next/link";
+
 import { DashboardShell } from "@/components/DashboardShell";
 import { LostLeadRescuePanel } from "@/components/LostLeadRescuePanel";
+import {
+  InsightList,
+  MetricCard,
+  PremiumCard,
+  PremiumEmptyState,
+  ProgressMeter,
+  SectionHeader,
+  StatusBadge
+} from "@/components/PremiumUI";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";
@@ -37,33 +47,75 @@ type ProposalRow = {
   title: string;
   client_name?: string | null;
   status?: string | null;
+  amount?: number | null;
   updated_at?: string | null;
 };
 
 function formatDate(dateValue?: string | null) {
   if (!dateValue) return "No date";
 
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "No date";
+  }
+
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short"
-  }).format(new Date(dateValue));
+  }).format(date);
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("en", {
+    maximumFractionDigits: 0
+  }).format(value);
 }
 
 function daysBetween(dateValue?: string | null) {
   if (!dateValue) return 0;
 
   const start = new Date(dateValue).getTime();
-  const now = Date.now();
-  return Math.max(0, Math.floor((now - start) / (1000 * 60 * 60 * 24)));
+
+  if (Number.isNaN(start)) return 0;
+
+  return Math.max(
+    0,
+    Math.floor((Date.now() - start) / (1000 * 60 * 60 * 24))
+  );
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getFirstName(email?: string | null) {
+  if (!email) return "there";
+
+  const rawName = email.split("@")[0] || "there";
+  const firstPart = rawName.split(/[._-]/).filter(Boolean)[0];
+
+  if (!firstPart) return "there";
+
+  return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
 }
 
 async function safeCount(query: any) {
   const result = await query;
+
   if (result.error) return 0;
+
   return result.count || 0;
 }
 
-async function loadClients(supabase: any, userId: string): Promise<ClientRow[]> {
+async function loadClients(
+  supabase: any,
+  userId: string
+): Promise<ClientRow[]> {
   const full = await supabase
     .from("clients")
     .select("id,name,phone,email,created_at")
@@ -95,9 +147,41 @@ async function loadClients(supabase: any, userId: string): Promise<ClientRow[]> 
   }));
 }
 
+async function loadProposals(
+  supabase: any,
+  userId: string
+): Promise<ProposalRow[]> {
+  const full = await supabase
+    .from("proposals")
+    .select("id,title,client_name,status,amount,updated_at")
+    .eq("user_id", userId)
+    .eq("deleted", false)
+    .order("updated_at", { ascending: false })
+    .limit(6);
+
+  if (!full.error) {
+    return (full.data || []) as ProposalRow[];
+  }
+
+  const fallback = await supabase
+    .from("proposals")
+    .select("id,title,client_name,status,updated_at")
+    .eq("user_id", userId)
+    .eq("deleted", false)
+    .order("updated_at", { ascending: false })
+    .limit(6);
+
+  return (fallback.data || []).map((proposal: any) => ({
+    ...proposal,
+    amount: null
+  })) as ProposalRow[];
+}
+
 async function loadRows<T>(query: any): Promise<T[]> {
   const result = await query;
+
   if (result.error) return [];
+
   return (result.data || []) as T[];
 }
 
@@ -111,24 +195,29 @@ export default async function DashboardPage() {
   if (!user) {
     return (
       <DashboardShell>
-        <div className="empty-state">
-          <h2>Please sign in first</h2>
-          <p className="muted">Login to view your ClientPilot workspace.</p>
-        </div>
+        <PremiumEmptyState
+          icon="🔐"
+          title="Please sign in first"
+          description="Login to open your ClientPilot AI command center."
+          action={
+            <Link className="cp-premium-button cp-button-gold" href="/login">
+              Open Login
+            </Link>
+          }
+        />
       </DashboardShell>
     );
   }
 
   const now = new Date();
-
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - 7);
 
   const clients = await loadClients(supabase, user.id);
-
   const meetings = await loadRows<MeetingRow>(
     supabase
       .from("meetings")
@@ -136,35 +225,16 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
   );
-
   const reminders = await loadRows<ReminderRow>(
     supabase
       .from("reminders")
-      .select("id,client_id,client_name,client_phone,title,status,due_at,priority,reminder_type")
+      .select(
+        "id,client_id,client_name,client_phone,title,status,due_at,priority,reminder_type"
+      )
       .eq("user_id", user.id)
       .order("due_at", { ascending: true })
   );
-
-  const proposals = await loadRows<ProposalRow>(
-    supabase
-      .from("proposals")
-      .select("id,title,client_name,status,updated_at")
-      .eq("user_id", user.id)
-      .eq("deleted", false)
-      .order("updated_at", { ascending: false })
-      .limit(5)
-  );
-
-  const pendingReminders = reminders.filter((item) => item.status !== "done");
-  const overdueReminders = pendingReminders.filter((item) => new Date(item.due_at) < now);
-
-  const dueTodayReminders = pendingReminders.filter((item) => {
-    const date = new Date(item.due_at);
-    return date >= todayStart && date <= todayEnd;
-  });
-
-  const activeProposalCount = proposals.length;
-
+  const proposals = await loadProposals(supabase, user.id);
   const tasksCount = await safeCount(
     supabase
       .from("tasks")
@@ -172,6 +242,29 @@ export default async function DashboardPage() {
       .eq("user_id", user.id)
       .neq("status", "done")
   );
+
+  const pendingReminders = reminders.filter((item) => item.status !== "done");
+  const overdueReminders = pendingReminders.filter(
+    (item) => new Date(item.due_at) < now
+  );
+  const dueTodayReminders = pendingReminders.filter((item) => {
+    const date = new Date(item.due_at);
+    return date >= todayStart && date <= todayEnd;
+  });
+  const meetingsThisWeek = meetings.filter((meeting) => {
+    if (!meeting.created_at) return false;
+    return new Date(meeting.created_at) >= weekStart;
+  }).length;
+  const pipelineValue = proposals.reduce(
+    (total, proposal) => total + Number(proposal.amount || 0),
+    0
+  );
+  const sentProposalCount = proposals.filter((proposal) =>
+    ["sent", "approved", "accepted"].includes(
+      String(proposal.status || "").toLowerCase()
+    )
+  ).length;
+  const activeProposalCount = proposals.length;
 
   const activityByClient = new Map<string, string>();
 
@@ -200,7 +293,10 @@ export default async function DashboardPage() {
 
   const lostLeads = clients
     .map((client) => {
-      const lastActivity = activityByClient.get(client.id) || client.created_at || new Date().toISOString();
+      const lastActivity =
+        activityByClient.get(client.id) ||
+        client.created_at ||
+        new Date().toISOString();
       const silentDays = daysBetween(lastActivity);
 
       return {
@@ -209,208 +305,432 @@ export default async function DashboardPage() {
         phone: client.phone || null,
         daysSilent: silentDays,
         lastActivity: formatDate(lastActivity),
-        reason: meetings.some((meeting) => String(meeting.client_id) === client.id)
+        reason: meetings.some(
+          (meeting) => String(meeting.client_id) === client.id
+        )
           ? "No recent meeting follow-up"
           : "Client added but no meeting activity"
       };
     })
-    .filter((client) => client.daysSilent >= 3 && !clientsWithPendingReminder.has(client.id))
+    .filter(
+      (client) =>
+        client.daysSilent >= 3 &&
+        !clientsWithPendingReminder.has(client.id)
+    )
     .sort((a, b) => b.daysSilent - a.daysSilent)
     .slice(0, 8);
 
-  const nextActions = [
+  const attentionScore = Math.max(
+    18,
+    Math.min(
+      100,
+      100 -
+        overdueReminders.length * 10 -
+        lostLeads.length * 5 -
+        Math.max(tasksCount - 5, 0) * 2
+    )
+  );
+
+  const recommendations = [
     overdueReminders.length > 0
-      ? {
-          title: "Fix overdue follow-ups",
-          body: `${overdueReminders.length} follow-up action is overdue.`,
-          href: "/dashboard/reminders",
-          cta: "Open Reminders"
-        }
-      : null,
+      ? `Complete ${overdueReminders.length} overdue follow-up${
+          overdueReminders.length === 1 ? "" : "s"
+        } before working on new leads.`
+      : "Your follow-up queue is under control.",
     lostLeads.length > 0
-      ? {
-          title: "Rescue cold leads",
-          body: `${lostLeads.length} client needs a follow-up before going cold.`,
-          href: "/dashboard",
-          cta: "View Rescue List"
-        }
-      : null,
-    proposals.length > 0
-      ? {
-          title: "Review active proposals",
-          body: `${activeProposalCount} proposal needs tracking or follow-up.`,
-          href: "/dashboard/proposals",
-          cta: "Open Proposals"
-        }
-      : null,
-    {
-      title: "Process new meeting",
-      body: "Paste meeting notes to create summary, tasks, and reminders.",
-      href: "/dashboard/upload",
-      cta: "Upload Meeting"
-    }
-  ].filter(Boolean) as { title: string; body: string; href: string; cta: string }[];
+      ? `Reconnect with ${lostLeads[0]?.name || "your oldest inactive client"} today.`
+      : "No cold leads need urgent rescue.",
+    activeProposalCount > 0
+      ? `Review ${activeProposalCount} active proposal${
+          activeProposalCount === 1 ? "" : "s"
+        } and move each one to a clear next step.`
+      : "Create a proposal from your next AI meeting analysis.",
+    meetingsThisWeek === 0
+      ? "Record or upload your first meeting this week."
+      : `You processed ${meetingsThisWeek} meeting${
+          meetingsThisWeek === 1 ? "" : "s"
+        } this week.`
+  ];
+
+  const risks = [
+    ...(overdueReminders.length > 0
+      ? [
+          `${overdueReminders.length} follow-up${
+            overdueReminders.length === 1 ? " is" : "s are"
+          } overdue.`
+        ]
+      : []),
+    ...(lostLeads.length > 0
+      ? [
+          `${lostLeads.length} client${
+            lostLeads.length === 1 ? " has" : "s have"
+          } been inactive for at least 3 days.`
+        ]
+      : []),
+    ...(tasksCount > 10 ? ["The open task queue is becoming heavy."] : [])
+  ];
+
+  const firstName = getFirstName(user.email);
 
   return (
     <DashboardShell>
-      <div className="page-hero command-hero">
-        <div>
-          <span className="badge">Daily Command Center</span>
-          <h1 style={{ fontSize: 46 }}>Owner Dashboard</h1>
-          <p className="muted">
-            See what needs attention today: overdue follow-ups, cold leads, active proposals, and pending client work.
-          </p>
+      <div className="cp-page">
+        <section className="cp-dashboard-hero">
+          <div className="cp-dashboard-hero-copy">
+            <span className="cp-eyebrow">AI Command Center</span>
+            <h1>
+              {getGreeting()}, {firstName} 👋
+            </h1>
+            <p>
+              ClientPilot has organized your follow-ups, proposals, meetings,
+              tasks, and cold leads into one clear plan for today.
+            </p>
+            <div className="cp-hero-actions">
+              <Link
+                className="cp-premium-button cp-button-gold"
+                href="/dashboard/upload"
+              >
+                🎙 Process Meeting
+              </Link>
+              <Link
+                className="cp-premium-button cp-button-soft"
+                href="/dashboard/reminders"
+              >
+                View Today&apos;s Work
+              </Link>
+            </div>
+          </div>
+
+          <div className="cp-dashboard-health">
+            <div className="cp-health-orb">
+              <strong>{attentionScore}</strong>
+              <span>/100</span>
+            </div>
+            <div>
+              <StatusBadge
+                tone={
+                  attentionScore >= 80
+                    ? "green"
+                    : attentionScore >= 55
+                      ? "gold"
+                      : "red"
+                }
+              >
+                {attentionScore >= 80
+                  ? "Workspace healthy"
+                  : attentionScore >= 55
+                    ? "Needs attention"
+                    : "Action required"}
+              </StatusBadge>
+              <h3>Sales Health</h3>
+              <p>
+                Based on overdue actions, cold clients, and your open workload.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="cp-metric-grid">
+          <MetricCard
+            icon="💰"
+            label="Pipeline Value"
+            value={`AED ${formatMoney(pipelineValue)}`}
+            note={
+              pipelineValue > 0
+                ? `${activeProposalCount} active proposals`
+                : "Add amounts to proposals"
+            }
+            tone="gold"
+          />
+          <MetricCard
+            icon="🔥"
+            label="Cold Leads"
+            value={lostLeads.length}
+            note="Need a rescue follow-up"
+            tone={lostLeads.length > 0 ? "red" : "green"}
+          />
+          <MetricCard
+            icon="🎙"
+            label="Meetings This Week"
+            value={meetingsThisWeek}
+            note={`${meetings.length} total meetings`}
+            tone="blue"
+          />
+          <MetricCard
+            icon="📄"
+            label="Active Proposals"
+            value={activeProposalCount}
+            note={`${sentProposalCount} sent or accepted`}
+            tone="green"
+          />
+        </section>
+
+        <div className="cp-dashboard-main-grid">
+          <PremiumCard padding="large" glow>
+            <SectionHeader
+              eyebrow="AI Priority Plan"
+              title="What needs your attention?"
+              description="A simple order of work so you can move deals forward without feeling overwhelmed."
+              action={
+                <Link
+                  className="cp-premium-button cp-button-dark"
+                  href="/dashboard/tasks"
+                >
+                  Open Tasks
+                </Link>
+              }
+            />
+
+            <div className="cp-priority-stack">
+              <Link
+                href="/dashboard/reminders"
+                className="cp-priority-row cp-priority-danger"
+              >
+                <div className="cp-priority-icon">⏰</div>
+                <div>
+                  <strong>Fix overdue follow-ups</strong>
+                  <p>
+                    {overdueReminders.length > 0
+                      ? `${overdueReminders.length} action${
+                          overdueReminders.length === 1 ? " is" : "s are"
+                        } already overdue.`
+                      : "Nothing is overdue right now."}
+                  </p>
+                </div>
+                <span>Open</span>
+              </Link>
+
+              <Link href="/dashboard/reminders" className="cp-priority-row">
+                <div className="cp-priority-icon">📅</div>
+                <div>
+                  <strong>Complete today&apos;s actions</strong>
+                  <p>
+                    {dueTodayReminders.length} reminder
+                    {dueTodayReminders.length === 1 ? "" : "s"} due today.
+                  </p>
+                </div>
+                <span>View</span>
+              </Link>
+
+              <Link href="/dashboard/proposals" className="cp-priority-row">
+                <div className="cp-priority-icon">📄</div>
+                <div>
+                  <strong>Review active proposals</strong>
+                  <p>
+                    {activeProposalCount} proposal
+                    {activeProposalCount === 1 ? "" : "s"} currently need
+                    tracking.
+                  </p>
+                </div>
+                <span>Review</span>
+              </Link>
+
+              <Link
+                href="/dashboard/upload"
+                className="cp-priority-row cp-priority-gold"
+              >
+                <div className="cp-priority-icon">🤖</div>
+                <div>
+                  <strong>Process your next meeting</strong>
+                  <p>
+                    Create a transcript, summary, tasks, sales insights, and a
+                    proposal draft.
+                  </p>
+                </div>
+                <span>Start</span>
+              </Link>
+            </div>
+          </PremiumCard>
+
+          <PremiumCard padding="large">
+            <SectionHeader
+              eyebrow="AI Sales Coach"
+              title="Workspace health"
+              description="A quick view of how organized your current sales activity is."
+            />
+            <div className="cp-stack">
+              <ProgressMeter
+                value={attentionScore}
+                label="Overall sales health"
+                helper={
+                  attentionScore >= 80
+                    ? "Excellent — keep the current rhythm."
+                    : "Complete overdue work to improve this score."
+                }
+              />
+
+              <div className="cp-mini-health-grid">
+                <div>
+                  <span>Due today</span>
+                  <strong>{dueTodayReminders.length}</strong>
+                </div>
+                <div>
+                  <span>Overdue</span>
+                  <strong>{overdueReminders.length}</strong>
+                </div>
+                <div>
+                  <span>Open tasks</span>
+                  <strong>{tasksCount}</strong>
+                </div>
+                <div>
+                  <span>Clients</span>
+                  <strong>{clients.length}</strong>
+                </div>
+              </div>
+
+              <div className="cp-ai-note">
+                <span>🤖</span>
+                <div>
+                  <strong>ClientPilot recommendation</strong>
+                  <p>{recommendations[0]}</p>
+                </div>
+              </div>
+            </div>
+          </PremiumCard>
         </div>
 
-        <div className="hero-mini-card">
-          <strong>{dueTodayReminders.length}</strong>
-          <span>Due today</span>
+        <div className="cp-grid-two">
+          <InsightList
+            title="AI Recommendations"
+            items={recommendations}
+            tone="positive"
+          />
+          <InsightList
+            title="Risks to Watch"
+            items={risks}
+            tone={risks.length > 0 ? "danger" : "positive"}
+            emptyText="No urgent risks detected."
+          />
+        </div>
+
+        <LostLeadRescuePanel leads={lostLeads} />
+
+        <div className="cp-dashboard-bottom-grid">
+          <PremiumCard padding="large">
+            <SectionHeader
+              eyebrow="Upcoming"
+              title="Next follow-ups"
+              description="The next client actions already waiting in your workspace."
+              action={
+                <Link
+                  className="cp-premium-button cp-button-soft"
+                  href="/dashboard/reminders"
+                >
+                  View All
+                </Link>
+              }
+            />
+
+            {pendingReminders.length === 0 ? (
+              <PremiumEmptyState
+                icon="✅"
+                title="No pending reminders"
+                description="Your follow-up queue is clear. Create a reminder from a meeting or client."
+                action={
+                  <Link
+                    className="cp-premium-button cp-button-gold"
+                    href="/dashboard/upload"
+                  >
+                    Process Meeting
+                  </Link>
+                }
+              />
+            ) : (
+              <div className="cp-activity-list">
+                {pendingReminders.slice(0, 5).map((reminder) => (
+                  <article key={reminder.id}>
+                    <div className="cp-activity-marker">
+                      {new Date(reminder.due_at) < now ? "!" : "•"}
+                    </div>
+                    <div>
+                      <strong>{reminder.title}</strong>
+                      <p>
+                        {reminder.client_name
+                          ? `${reminder.client_name} · `
+                          : ""}
+                        {formatDate(reminder.due_at)}
+                      </p>
+                    </div>
+                    <StatusBadge
+                      tone={
+                        new Date(reminder.due_at) < now
+                          ? "red"
+                          : reminder.priority === "high"
+                            ? "gold"
+                            : "gray"
+                      }
+                    >
+                      {reminder.priority || "medium"}
+                    </StatusBadge>
+                  </article>
+                ))}
+              </div>
+            )}
+          </PremiumCard>
+
+          <PremiumCard padding="large">
+            <SectionHeader
+              eyebrow="Proposal Activity"
+              title="Active proposals"
+              description="Keep every opportunity moving toward a clear decision."
+              action={
+                <Link
+                  className="cp-premium-button cp-button-soft"
+                  href="/dashboard/proposals"
+                >
+                  Open Library
+                </Link>
+              }
+            />
+
+            {proposals.length === 0 ? (
+              <PremiumEmptyState
+                icon="📄"
+                title="No active proposals"
+                description="Process a meeting, then turn the AI analysis into a polished client proposal."
+                action={
+                  <Link
+                    className="cp-premium-button cp-button-gold"
+                    href="/dashboard/upload"
+                  >
+                    Upload Meeting
+                  </Link>
+                }
+              />
+            ) : (
+              <div className="cp-activity-list">
+                {proposals.map((proposal) => (
+                  <article key={proposal.id}>
+                    <div className="cp-activity-marker cp-marker-gold">📄</div>
+                    <div>
+                      <strong>{proposal.title}</strong>
+                      <p>
+                        {proposal.client_name
+                          ? `${proposal.client_name} · `
+                          : ""}
+                        {formatDate(proposal.updated_at)}
+                      </p>
+                    </div>
+                    <StatusBadge
+                      tone={
+                        ["accepted", "approved"].includes(
+                          String(proposal.status || "").toLowerCase()
+                        )
+                          ? "green"
+                          : proposal.status === "sent"
+                            ? "blue"
+                            : "gold"
+                      }
+                    >
+                      {proposal.status || "draft"}
+                    </StatusBadge>
+                  </article>
+                ))}
+              </div>
+            )}
+          </PremiumCard>
         </div>
       </div>
-
-      <section className="command-stat-grid">
-        <article className="command-stat-card">
-          <span>Due Today</span>
-          <strong>{dueTodayReminders.length}</strong>
-          <Link href="/dashboard/reminders">Open follow-ups</Link>
-        </article>
-
-        <article className="command-stat-card danger">
-          <span>Overdue</span>
-          <strong>{overdueReminders.length}</strong>
-          <Link href="/dashboard/reminders">Fix now</Link>
-        </article>
-
-        <article className="command-stat-card">
-          <span>Cold Leads</span>
-          <strong>{lostLeads.length}</strong>
-          <Link href="/dashboard">Rescue leads</Link>
-        </article>
-
-        <article className="command-stat-card">
-          <span>Pending Tasks</span>
-          <strong>{tasksCount}</strong>
-          <Link href="/dashboard/tasks">View tasks</Link>
-        </article>
-      </section>
-
-      <section className="owner-action-grid">
-        <article className="owner-priority-card">
-          <span className="badge">Next Best Actions</span>
-          <h2>What should you do first?</h2>
-
-          <div className="owner-action-list">
-            {nextActions.slice(0, 4).map((action) => (
-              <div key={action.title}>
-                <div>
-                  <strong>{action.title}</strong>
-                  <p>{action.body}</p>
-                </div>
-
-                <Link href={action.href}>{action.cta}</Link>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="owner-workload-card">
-          <span className="badge">Manual Work Reduced</span>
-          <h2>Your autopilot workflow</h2>
-
-          <div className="workload-steps">
-            <div>
-              <strong>Meeting notes</strong>
-              <span>become summary and tasks</span>
-            </div>
-            <div>
-              <strong>Follow-up actions</strong>
-              <span>become reminders</span>
-            </div>
-            <div>
-              <strong>Cold clients</strong>
-              <span>become rescue alerts</span>
-            </div>
-            <div>
-              <strong>Proposals</strong>
-              <span>stay organized</span>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <LostLeadRescuePanel leads={lostLeads} />
-
-      <section className="command-bottom-grid">
-        <article className="command-list-card">
-          <div className="section-head">
-            <div>
-              <span className="badge">Upcoming</span>
-              <h2>Next follow-ups</h2>
-            </div>
-
-            <Link className="btn secondary" href="/dashboard/reminders">
-              View All
-            </Link>
-          </div>
-
-          {pendingReminders.length === 0 ? (
-            <div className="empty-state mini">
-              <h2>No pending reminders</h2>
-              <p className="muted">Create reminders from meetings or clients.</p>
-            </div>
-          ) : (
-            <div className="command-mini-list">
-              {pendingReminders.slice(0, 5).map((reminder) => (
-                <article key={reminder.id}>
-                  <div>
-                    <strong>{reminder.title}</strong>
-                    <span>
-                      {reminder.client_name ? `${reminder.client_name} Â· ` : ""}
-                      {formatDate(reminder.due_at)}
-                    </span>
-                  </div>
-                  <em>{reminder.priority || "medium"}</em>
-                </article>
-              ))}
-            </div>
-          )}
-        </article>
-
-        <article className="command-list-card">
-          <div className="section-head">
-            <div>
-              <span className="badge">Proposals</span>
-              <h2>Active proposals</h2>
-            </div>
-
-            <Link className="btn secondary" href="/dashboard/proposals">
-              Open
-            </Link>
-          </div>
-
-          {proposals.length === 0 ? (
-            <div className="empty-state mini">
-              <h2>No active proposals</h2>
-              <p className="muted">Create a proposal for your next client.</p>
-            </div>
-          ) : (
-            <div className="command-mini-list">
-              {proposals.map((proposal) => (
-                <article key={proposal.id}>
-                  <div>
-                    <strong>{proposal.title}</strong>
-                    <span>
-                      {proposal.client_name ? `${proposal.client_name} Â· ` : ""}
-                      {formatDate(proposal.updated_at)}
-                    </span>
-                  </div>
-                  <em>{proposal.status || "draft"}</em>
-                </article>
-              ))}
-            </div>
-          )}
-        </article>
-      </section>
     </DashboardShell>
   );
 }
