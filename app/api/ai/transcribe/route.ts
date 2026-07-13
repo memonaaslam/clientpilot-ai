@@ -345,10 +345,6 @@ export async function POST(request: Request) {
       .select("*")
       .single();
 
-    /*
-      Compatibility retry if the meetings table
-      does not contain action_items.
-    */
     if (error) {
       insertPayload = {
         ...basePayload,
@@ -365,10 +361,6 @@ export async function POST(request: Request) {
       error = retry.error;
     }
 
-    /*
-      Final compatibility retry for an older
-      meetings table containing only core fields.
-    */
     if (error) {
       insertPayload = basePayload;
 
@@ -456,114 +448,54 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-
       meeting,
       meetingId,
-
       transcript,
       transcriptionSource,
-
       transcriptionModel:
         transcriptionSource === "audio-ai"
-          ? process.env
-              .OPENAI_TRANSCRIPTION_MODEL ||
+          ? process.env.OPENAI_TRANSCRIPTION_MODEL ||
             "gpt-4o-transcribe"
           : null,
-
       summary: smart.summary,
-
-      actionItems:
-        smart.actionItems,
-
+      actionItems: smart.actionItems,
       tasks: createdTasks,
-
-      tasksCreated:
-        createdTasks.length,
-
-      followUp:
-        smart.followUp,
-
-      proposalPoints:
-        smart.proposalPoints,
-
-      budget:
-        smart.budget,
-
-      timeline:
-        smart.timeline,
-
-      decisionMaker:
-        smart.decisionMaker,
-
-      requirements:
-        smart.requirements,
-
-      painPoints:
-        smart.painPoints,
-
-      objections:
-        smart.objections,
-
-      closingProbability:
-        smart.closingProbability,
-
-      sentiment:
-        smart.sentiment,
-
-      proposalDraft:
-        smart.proposalDraft,
-
+      tasksCreated: createdTasks.length,
+      followUp: smart.followUp,
+      proposalPoints: smart.proposalPoints,
+      budget: smart.budget,
+      timeline: smart.timeline,
+      decisionMaker: smart.decisionMaker,
+      requirements: smart.requirements,
+      painPoints: smart.painPoints,
+      objections: smart.objections,
+      closingProbability: smart.closingProbability,
+      sentiment: smart.sentiment,
+      proposalDraft: smart.proposalDraft,
       autopilot: {
-        temperature:
-          smart.temperature,
-
-        score:
-          smart.score,
-
-        stage:
-          smart.stage,
-
-        nextBestAction:
-          smart.nextBestAction,
-
-        whatsappMessage:
-          smart.whatsappMessage,
-
-        emailMessage:
-          smart.emailMessage,
-
-        automationPlan:
-          smart.automationPlan,
-
-        missingInfo:
-          smart.missingInfo,
-
-        dealSignals:
-          smart.dealSignals,
-
-        riskSignals:
-          smart.riskSignals
+        temperature: smart.temperature,
+        score: smart.score,
+        stage: smart.stage,
+        nextBestAction: smart.nextBestAction,
+        whatsappMessage: smart.whatsappMessage,
+        emailMessage: smart.emailMessage,
+        automationPlan: smart.automationPlan,
+        missingInfo: smart.missingInfo,
+        dealSignals: smart.dealSignals,
+        riskSignals: smart.riskSignals
       },
-
       aiMode,
       analysisMode,
       analysisModel,
-
-      usage:
-        limitStatus.usage + 1,
-
-      limit:
-        limitStatus.limit,
-
+      usage: limitStatus.usage + 1,
+      limit: limitStatus.limit,
       remaining: Math.max(
         limitStatus.limit -
           limitStatus.usage -
           1,
         0
       ),
-
-      plan:
-        limitStatus.subscription.plan
+      plan: limitStatus.subscription.plan
     });
   } catch (error) {
     console.error(
