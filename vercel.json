@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/clientpilotai/api/cron/google-drive-backup",
+      "schedule": "0 3 * * 0"
+    }
+  ]
+}
