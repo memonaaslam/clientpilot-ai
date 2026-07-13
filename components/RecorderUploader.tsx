@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
 import Link from "next/link";
+import { useRef, useState } from "react";
 
 type ClientOption = {
   id: string;
@@ -22,8 +22,21 @@ type MeetingResult = {
   sentiment?: string;
   actionItems?: string[];
   proposalDraft?: string;
+  followUp?: string;
   usage?: number;
   limit?: number;
+  autopilot?: {
+    temperature?: string;
+    score?: number;
+    stage?: string;
+    nextBestAction?: string;
+    whatsappMessage?: string;
+    emailMessage?: string;
+    automationPlan?: string[];
+    missingInfo?: string[];
+    dealSignals?: string[];
+    riskSignals?: string[];
+  };
 };
 
 export function RecorderUploader({
@@ -34,38 +47,29 @@ export function RecorderUploader({
   const [clientId, setClientId] = useState(
     clients[0]?.id ?? ""
   );
-
   const [title, setTitle] = useState(
     "Client meeting"
   );
-
-  const [file, setFile] = useState<File | null>(
-    null
-  );
-
+  const [file, setFile] =
+    useState<File | null>(null);
   const [notes, setNotes] = useState("");
-
   const [status, setStatus] = useState("");
-
   const [error, setError] = useState("");
-
   const [recording, setRecording] =
     useState(false);
-
   const [loading, setLoading] =
     useState(false);
-
   const [result, setResult] =
     useState<MeetingResult | null>(null);
 
   const mediaRecorder =
     useRef<MediaRecorder | null>(null);
-
   const chunks = useRef<Blob[]>([]);
 
   async function startRecording() {
     setError("");
     setStatus("");
+    setResult(null);
 
     try {
       const stream =
@@ -99,7 +103,6 @@ export function RecorderUploader({
         );
 
         setFile(recordedFile);
-
         setStatus(
           "Voice note recorded successfully."
         );
@@ -110,10 +113,8 @@ export function RecorderUploader({
       };
 
       recorder.start();
-
       setRecording(true);
-
-      setStatus("Recording voice note...");
+      setStatus("Recording in progress...");
     } catch {
       setError(
         "Microphone access was denied or unavailable."
@@ -143,9 +144,8 @@ export function RecorderUploader({
 
     if (!file && !notes.trim()) {
       setError(
-        "Please record audio, upload an audio file, or paste meeting notes."
+        "Please record audio, upload a file, or paste meeting notes."
       );
-
       setLoading(false);
       return;
     }
@@ -161,10 +161,7 @@ export function RecorderUploader({
       }
 
       if (notes.trim()) {
-        formData.append(
-          "notes",
-          notes.trim()
-        );
+        formData.append("notes", notes.trim());
       }
 
       const response = await fetch(
@@ -185,16 +182,13 @@ export function RecorderUploader({
           data.error ||
             "Unable to process meeting."
         );
-
         return;
       }
 
       setResult(data);
-
       setStatus(
-        "Meeting processed successfully."
+        "AI meeting analysis completed."
       );
-
       setFile(null);
       setNotes("");
     } catch {
@@ -206,353 +200,518 @@ export function RecorderUploader({
     }
   }
 
+  const score =
+    result?.autopilot?.score ??
+    result?.closingProbability ??
+    0;
+
+  const temperature =
+    result?.autopilot?.temperature ||
+    (score >= 75
+      ? "Hot"
+      : score >= 45
+        ? "Warm"
+        : "Cold");
+
   return (
-    <div className="smart-upload-layout">
-      <section className="smart-upload-card">
-        <div className="smart-upload-head">
-          <span className="badge">
-            AI Meeting Intelligence
-          </span>
+    <div className="cp-meeting-workspace">
+      <section className="cp-meeting-input-card">
+        <div className="cp-meeting-input-head">
+          <div>
+            <span className="cp-eyebrow">
+              AI Meeting Intelligence
+            </span>
 
-          <h2>Record, upload, or paste a meeting</h2>
+            <h2>
+              Record, upload, or paste a meeting
+            </h2>
 
-          <p>
-            Use a voice note, upload an audio file,
-            or paste meeting notes. ClientPilot AI
-            will create the transcript, summary,
-            tasks, proposal draft, and sales insights.
-          </p>
+            <p>
+              Choose the easiest method. ClientPilot
+              will transcribe, understand, and turn
+              the meeting into clear sales actions.
+            </p>
+          </div>
+
+          <div className="cp-meeting-ai-chip">
+            <span>✦</span>
+            <div>
+              <strong>Makzora AI</strong>
+              <small>Ready to analyze</small>
+            </div>
+          </div>
         </div>
 
         <form
-          className="smart-upload-form"
+          className="cp-meeting-form"
           onSubmit={submitMeeting}
         >
-          <label>
-            Meeting title
-            <input
-              type="text"
-              value={title}
-              onChange={(event) =>
-                setTitle(event.target.value)
-              }
-              placeholder="Client meeting"
-              required
-            />
-          </label>
+          <div className="cp-form-grid">
+            <div className="cp-field">
+              <label>Meeting title</label>
+              <input
+                className="cp-input"
+                value={title}
+                onChange={(event) =>
+                  setTitle(event.target.value)
+                }
+                placeholder="Client meeting"
+                required
+              />
+            </div>
 
-          <label>
-            Client
-            <select
-              value={clientId}
-              onChange={(event) =>
-                setClientId(event.target.value)
-              }
-              required
-            >
-              {clients.length === 0 ? (
-                <option value="">
-                  No clients found
-                </option>
-              ) : (
-                clients.map((client) => (
-                  <option
-                    key={client.id}
-                    value={client.id}
-                  >
-                    {client.name}
+            <div className="cp-field">
+              <label>Client</label>
+              <select
+                className="cp-select"
+                value={clientId}
+                onChange={(event) =>
+                  setClientId(event.target.value)
+                }
+                required
+              >
+                {clients.length === 0 ? (
+                  <option value="">
+                    No clients found
                   </option>
-                ))
-              )}
-            </select>
-          </label>
-
-          <div className="card">
-            <span className="badge">
-              Option 1
-            </span>
-
-            <h3>Record voice note</h3>
-
-            <p className="muted">
-              Record the meeting directly from your
-              microphone.
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap"
-              }}
-            >
-              {!recording ? (
-                <button
-                  className="btn secondary"
-                  type="button"
-                  onClick={startRecording}
-                >
-                  Record Voice Note
-                </button>
-              ) : (
-                <button
-                  className="btn secondary"
-                  type="button"
-                  onClick={stopRecording}
-                >
-                  Stop Recording
-                </button>
-              )}
-
-              {file ? (
-                <button
-                  className="btn secondary"
-                  type="button"
-                  onClick={clearAudio}
-                >
-                  Remove Audio
-                </button>
-              ) : null}
+                ) : (
+                  clients.map((client) => (
+                    <option
+                      key={client.id}
+                      value={client.id}
+                    >
+                      {client.name}
+                    </option>
+                  ))
+                )}
+              </select>
             </div>
           </div>
 
-          <div className="card">
-            <span className="badge">
-              Option 2
-            </span>
+          <div className="cp-meeting-methods">
+            <article
+              className={`cp-meeting-method ${
+                recording
+                  ? "cp-meeting-method-active"
+                  : ""
+              }`}
+            >
+              <div className="cp-meeting-method-icon">
+                🎙
+              </div>
 
-            <h3>Upload audio file</h3>
+              <span className="cp-method-number">
+                01
+              </span>
 
-            <input
-              className="input"
-              type="file"
-              accept=".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm,audio/*"
-              onChange={(event) =>
-                setFile(
-                  event.target.files?.[0] ??
-                    null
-                )
-              }
-            />
+              <h3>Record voice note</h3>
 
-            <p className="muted">
-              Supported: MP3, M4A, WAV, MP4 and
-              WebM. Maximum size: 25 MB.
-            </p>
-
-            {file ? (
-              <p className="auth-message">
-                Selected: {file.name}
+              <p>
+                Capture the meeting directly from
+                your microphone.
               </p>
-            ) : null}
-          </div>
 
-          <div className="card">
-            <span className="badge">
-              Option 3
-            </span>
+              <div className="cp-method-actions">
+                {!recording ? (
+                  <button
+                    className="cp-premium-button cp-button-dark"
+                    type="button"
+                    onClick={startRecording}
+                  >
+                    Record Voice Note
+                  </button>
+                ) : (
+                  <button
+                    className="cp-premium-button cp-button-danger"
+                    type="button"
+                    onClick={stopRecording}
+                  >
+                    Stop Recording
+                  </button>
+                )}
 
-            <h3>Paste meeting text</h3>
+                {file ? (
+                  <button
+                    className="cp-premium-button cp-button-soft"
+                    type="button"
+                    onClick={clearAudio}
+                  >
+                    Remove Audio
+                  </button>
+                ) : null}
+              </div>
 
-            <textarea
-              value={notes}
-              onChange={(event) =>
-                setNotes(event.target.value)
-              }
-              placeholder="Paste meeting transcript or notes here..."
-              rows={12}
-            />
+              {recording ? (
+                <div className="cp-recording-status">
+                  <span />
+                  Recording now
+                </div>
+              ) : null}
+            </article>
 
-            <p className="muted">
-              You can use text notes without adding
-              an audio file.
-            </p>
+            <article className="cp-meeting-method">
+              <div className="cp-meeting-method-icon">
+                📁
+              </div>
+
+              <span className="cp-method-number">
+                02
+              </span>
+
+              <h3>Upload audio file</h3>
+
+              <p>
+                Add MP3, M4A, WAV, MP4, or WebM up
+                to 25 MB.
+              </p>
+
+              <label className="cp-upload-zone">
+                <input
+                  type="file"
+                  accept=".mp3,.mp4,.mpeg,.mpga,.m4a,.wav,.webm,audio/*"
+                  onChange={(event) =>
+                    setFile(
+                      event.target.files?.[0] ??
+                        null
+                    )
+                  }
+                />
+
+                <span>Choose audio file</span>
+
+                <small>
+                  {file
+                    ? file.name
+                    : "No file selected"}
+                </small>
+              </label>
+            </article>
+
+            <article className="cp-meeting-method">
+              <div className="cp-meeting-method-icon">
+                📝
+              </div>
+
+              <span className="cp-method-number">
+                03
+              </span>
+
+              <h3>Paste meeting text</h3>
+
+              <p>
+                Paste notes or a transcript when no
+                audio is available.
+              </p>
+
+              <textarea
+                className="cp-textarea"
+                value={notes}
+                onChange={(event) =>
+                  setNotes(event.target.value)
+                }
+                placeholder="Paste meeting transcript or notes here..."
+                rows={9}
+              />
+            </article>
           </div>
 
           {status ? (
-            <p className="auth-message">
+            <div className="cp-meeting-message cp-meeting-success">
+              <span>✓</span>
               {status}
-            </p>
+            </div>
           ) : null}
 
           {error ? (
-            <p className="auth-error">
+            <div className="cp-meeting-message cp-meeting-error">
+              <span>!</span>
               {error}
-            </p>
+            </div>
           ) : null}
 
-          <button
-            className="btn gold"
-            type="submit"
-            disabled={
-              loading ||
-              clients.length === 0
-            }
-          >
-            {loading
-              ? "Processing Meeting..."
-              : "Create AI Meeting Analysis"}
-          </button>
+          <div className="cp-meeting-submit-row">
+            <div>
+              <strong>
+                One click creates everything
+              </strong>
+              <span>
+                Transcript, summary, sales score,
+                tasks, proposal draft, and follow-up.
+              </span>
+            </div>
+
+            <button
+              className="cp-premium-button cp-button-gold cp-meeting-submit"
+              type="submit"
+              disabled={
+                loading ||
+                clients.length === 0
+              }
+            >
+              {loading
+                ? "Analyzing Meeting..."
+                : "Create AI Meeting Analysis"}
+            </button>
+          </div>
         </form>
       </section>
 
-      <aside className="smart-upload-preview">
-        <h3>What ClientPilot creates</h3>
-
-        <div className="smart-preview-step">
-          <strong>01</strong>
-          <span>Transcript and AI summary</span>
-        </div>
-
-        <div className="smart-preview-step">
-          <strong>02</strong>
-          <span>
-            Budget, timeline, and decision maker
+      {!result ? (
+        <aside className="cp-meeting-preview-panel">
+          <span className="cp-eyebrow">
+            What AI creates
           </span>
-        </div>
 
-        <div className="smart-preview-step">
-          <strong>03</strong>
-          <span>
-            Requirements, pain points, and objections
-          </span>
-        </div>
+          <h3>
+            One meeting becomes a complete sales
+            workspace.
+          </h3>
 
-        <div className="smart-preview-step">
-          <strong>04</strong>
-          <span>
-            Tasks, proposal draft, and sales score
-          </span>
-        </div>
-      </aside>
+          <div className="cp-meeting-preview-list">
+            <div>
+              <strong>01</strong>
+              <span>Transcript + summary</span>
+            </div>
+
+            <div>
+              <strong>02</strong>
+              <span>
+                Budget, timeline, decision maker
+              </span>
+            </div>
+
+            <div>
+              <strong>03</strong>
+              <span>
+                Requirements, objections, risks
+              </span>
+            </div>
+
+            <div>
+              <strong>04</strong>
+              <span>
+                Tasks, proposal, email, WhatsApp
+              </span>
+            </div>
+          </div>
+        </aside>
+      ) : null}
 
       {result ? (
-        <section className="smart-result-card">
-          <div className="section-head">
+        <section className="cp-meeting-results">
+          <div className="cp-results-hero">
             <div>
-              <span className="badge">
+              <span className="cp-eyebrow">
                 AI Analysis Complete
               </span>
 
-              <h3>
-                Meeting saved successfully
-              </h3>
+              <h2>
+                Your meeting is now actionable.
+              </h2>
 
-              {typeof result.usage === "number" &&
-              typeof result.limit === "number" ? (
-                <p className="muted">
-                  Usage: {result.usage}/
-                  {result.limit} meetings this
-                  month.
-                </p>
-              ) : null}
+              <p>
+                ClientPilot converted the meeting
+                into clear sales intelligence and
+                next steps.
+              </p>
             </div>
 
-            <Link
-              className="btn secondary"
-              href="/dashboard/meetings"
-            >
-              View Meetings
-            </Link>
+            <div className="cp-results-actions">
+              <Link
+                className="cp-premium-button cp-button-soft"
+                href="/dashboard/meetings"
+              >
+                View Meeting
+              </Link>
+
+              <Link
+                className="cp-premium-button cp-button-dark"
+                href="/dashboard/tasks"
+              >
+                Open Tasks
+              </Link>
+            </div>
           </div>
 
-          <h4>Transcript</h4>
-          <pre>
-            {result.transcript ||
-              "No transcript returned."}
-          </pre>
+          <div className="cp-result-score-grid">
+            <article className="cp-score-card cp-score-card-main">
+              <span>AI Sales Score</span>
 
-          <h4>AI Summary</h4>
-          <pre>
-            {result.summary ||
-              "No summary returned."}
-          </pre>
+              <div className="cp-score-value">
+                <strong>{score}</strong>
+                <small>/100</small>
+              </div>
 
-          <div className="grid two">
-            <div className="card">
-              <h4>Budget</h4>
-              <p>
-                {result.budget ||
-                  "Not confirmed"}
-              </p>
-            </div>
+              <div className="cp-score-track">
+                <div
+                  style={{
+                    width: `${Math.max(
+                      0,
+                      Math.min(100, score)
+                    )}%`
+                  }}
+                />
+              </div>
+            </article>
 
-            <div className="card">
-              <h4>Timeline</h4>
-              <p>
-                {result.timeline ||
-                  "Not confirmed"}
-              </p>
-            </div>
+            <article className="cp-score-card">
+              <span>Deal Temperature</span>
+              <strong>{temperature}</strong>
+              <small>
+                {result?.autopilot?.stage ||
+                  "Needs review"}
+              </small>
+            </article>
 
-            <div className="card">
-              <h4>Decision Maker</h4>
-              <p>
-                {result.decisionMaker ||
-                  "Not confirmed"}
-              </p>
-            </div>
-
-            <div className="card">
-              <h4>Closing Probability</h4>
-              <p>
+            <article className="cp-score-card">
+              <span>Closing Probability</span>
+              <strong>
                 {typeof result.closingProbability ===
                 "number"
                   ? `${result.closingProbability}%`
-                  : "Not available"}
-              </p>
-            </div>
+                  : "—"}
+              </strong>
+              <small>
+                AI confidence estimate
+              </small>
+            </article>
 
-            <div className="card">
-              <h4>Sentiment</h4>
-              <p>
-                {result.sentiment ||
-                  "Neutral"}
-              </p>
-            </div>
+            <article className="cp-score-card">
+              <span>Sentiment</span>
+              <strong>
+                {result.sentiment || "Neutral"}
+              </strong>
+              <small>
+                Client meeting tone
+              </small>
+            </article>
           </div>
 
-          <h4>Requirements</h4>
-          <ul>
-            {(result.requirements || []).map(
-              (item) => (
-                <li key={item}>{item}</li>
-              )
-            )}
-          </ul>
+          <div className="cp-result-kpi-grid">
+            <article>
+              <span>💰 Budget</span>
+              <strong>
+                {result.budget || "Not confirmed"}
+              </strong>
+            </article>
 
-          <h4>Pain Points</h4>
-          <ul>
-            {(result.painPoints || []).map(
-              (item) => (
-                <li key={item}>{item}</li>
-              )
-            )}
-          </ul>
+            <article>
+              <span>📅 Timeline</span>
+              <strong>
+                {result.timeline || "Not confirmed"}
+              </strong>
+            </article>
 
-          <h4>Objections</h4>
-          <ul>
-            {(result.objections || []).map(
-              (item) => (
-                <li key={item}>{item}</li>
-              )
-            )}
-          </ul>
+            <article>
+              <span>👤 Decision Maker</span>
+              <strong>
+                {result.decisionMaker ||
+                  "Not confirmed"}
+              </strong>
+            </article>
+          </div>
 
-          <h4>Tasks Created</h4>
-          <ul>
-            {(result.actionItems || []).map(
-              (item) => (
-                <li key={item}>{item}</li>
-              )
-            )}
-          </ul>
+          <div className="cp-result-content-grid">
+            <article className="cp-result-card cp-result-card-wide">
+              <span className="cp-eyebrow">
+                AI Summary
+              </span>
+              <pre>
+                {result.summary ||
+                  "No summary returned."}
+              </pre>
+            </article>
 
-          <h4>Proposal Draft</h4>
-          <pre>
-            {result.proposalDraft ||
-              "No proposal draft returned."}
-          </pre>
+            <article className="cp-result-card">
+              <span className="cp-eyebrow">
+                Next Best Action
+              </span>
+              <h3>
+                {result.autopilot?.nextBestAction ||
+                  result.followUp ||
+                  "Review the meeting and follow up."}
+              </h3>
+            </article>
+
+            <article className="cp-result-card">
+              <span className="cp-eyebrow">
+                Requirements
+              </span>
+              <ul>
+                {(result.requirements || []).map(
+                  (item) => (
+                    <li key={item}>{item}</li>
+                  )
+                )}
+              </ul>
+            </article>
+
+            <article className="cp-result-card">
+              <span className="cp-eyebrow">
+                Pain Points
+              </span>
+              <ul>
+                {(result.painPoints || []).map(
+                  (item) => (
+                    <li key={item}>{item}</li>
+                  )
+                )}
+              </ul>
+            </article>
+
+            <article className="cp-result-card">
+              <span className="cp-eyebrow">
+                Objections & Risks
+              </span>
+              <ul>
+                {[
+                  ...(result.objections || []),
+                  ...(result.autopilot?.riskSignals ||
+                    [])
+                ].map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="cp-result-card">
+              <span className="cp-eyebrow">
+                Tasks Created
+              </span>
+              <ul>
+                {(result.actionItems || []).map(
+                  (item) => (
+                    <li key={item}>{item}</li>
+                  )
+                )}
+              </ul>
+            </article>
+
+            <article className="cp-result-card cp-result-card-wide">
+              <span className="cp-eyebrow">
+                Proposal Draft
+              </span>
+              <pre>
+                {result.proposalDraft ||
+                  "No proposal draft returned."}
+              </pre>
+            </article>
+
+            <article className="cp-result-card cp-result-card-wide">
+              <span className="cp-eyebrow">
+                Transcript
+              </span>
+              <details>
+                <summary>
+                  Open full transcript
+                </summary>
+                <pre>
+                  {result.transcript ||
+                    "No transcript returned."}
+                </pre>
+              </details>
+            </article>
+          </div>
         </section>
       ) : null}
     </div>
