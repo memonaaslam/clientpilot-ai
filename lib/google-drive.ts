@@ -222,9 +222,9 @@ export async function exchangeGoogleCode(
     );
   }
 
-  assertDriveScopeGranted(
-    data.scope
-  );
+  if (data.scope) {
+  assertDriveScopeGranted(data.scope);
+}
 
   return data;
 }
