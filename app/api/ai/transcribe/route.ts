@@ -1,7 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { NextResponse } from "next/server";
 
-import { createSmartMeetingResult } from "@/lib/smart-meeting";
+import { analyzeMeetingWithAI } from "@/lib/ai/analyze-meeting";
 import { getPlanLimitStatus } from "@/lib/subscription";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
 
@@ -186,7 +186,7 @@ async function createTimelineEntry({
     client_id: clientId,
     event_type: "meeting_uploaded",
     title: "Meeting uploaded",
-    description: `AI transcription completed for: ${title}`,
+    description: `AI transcription and analysis completed for: ${title}`,
     related_id: meetingId,
     created_at: new Date().toISOString()
   };
@@ -207,7 +207,7 @@ async function createTimelineEntry({
     client_id: clientId,
     type: "meeting_uploaded",
     title: "Meeting uploaded",
-    description: `AI transcription completed for: ${title}`,
+    description: `AI transcription and analysis completed for: ${title}`,
     meeting_id: meetingId,
     created_at: new Date().toISOString()
   };
@@ -305,11 +305,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const smart =
-      createSmartMeetingResult(
-        title,
-        transcript
-      );
+    const {
+      analysis: smart,
+      mode: analysisMode,
+      model: analysisModel
+    } = await analyzeMeetingWithAI(
+      title,
+      transcript
+    );
 
     const basePayload: Record<
       string,
@@ -342,6 +345,10 @@ export async function POST(request: Request) {
       .select("*")
       .single();
 
+    /*
+      Compatibility retry if the meetings table
+      does not contain action_items.
+    */
     if (error) {
       insertPayload = {
         ...basePayload,
@@ -358,6 +365,10 @@ export async function POST(request: Request) {
       error = retry.error;
     }
 
+    /*
+      Final compatibility retry for an older
+      meetings table containing only core fields.
+    */
     if (error) {
       insertPayload = basePayload;
 
@@ -402,7 +413,7 @@ export async function POST(request: Request) {
             createTaskDueDate(index),
           source: "meeting",
           notes:
-            `Auto-created from meeting: ${title}`
+            `AI-created from meeting: ${title}`
         })
       );
 
@@ -434,66 +445,129 @@ export async function POST(request: Request) {
       title
     });
 
+    const aiMode =
+      transcriptionSource === "audio-ai"
+        ? analysisMode === "openai"
+          ? "openai-transcription-and-analysis"
+          : "openai-transcription-fallback-analysis"
+        : analysisMode === "openai"
+          ? "openai-notes-analysis"
+          : "smart-notes";
+
     return NextResponse.json({
       success: true,
+
       meeting,
       meetingId,
+
       transcript,
       transcriptionSource,
+
       transcriptionModel:
         transcriptionSource === "audio-ai"
           ? process.env
               .OPENAI_TRANSCRIPTION_MODEL ||
             "gpt-4o-transcribe"
           : null,
+
       summary: smart.summary,
-      actionItems: smart.actionItems,
+
+      actionItems:
+        smart.actionItems,
+
       tasks: createdTasks,
+
       tasksCreated:
         createdTasks.length,
-      followUp: smart.followUp,
+
+      followUp:
+        smart.followUp,
+
       proposalPoints:
         smart.proposalPoints,
+
+      budget:
+        smart.budget,
+
+      timeline:
+        smart.timeline,
+
+      decisionMaker:
+        smart.decisionMaker,
+
+      requirements:
+        smart.requirements,
+
+      painPoints:
+        smart.painPoints,
+
+      objections:
+        smart.objections,
+
+      closingProbability:
+        smart.closingProbability,
+
+      sentiment:
+        smart.sentiment,
+
+      proposalDraft:
+        smart.proposalDraft,
+
       autopilot: {
         temperature:
           smart.temperature,
-        score: smart.score,
-        stage: smart.stage,
+
+        score:
+          smart.score,
+
+        stage:
+          smart.stage,
+
         nextBestAction:
           smart.nextBestAction,
+
         whatsappMessage:
           smart.whatsappMessage,
+
         emailMessage:
           smart.emailMessage,
+
         automationPlan:
           smart.automationPlan,
+
         missingInfo:
           smart.missingInfo,
+
         dealSignals:
           smart.dealSignals,
+
         riskSignals:
           smart.riskSignals
       },
-      aiMode:
-        transcriptionSource === "audio-ai"
-          ? "openai-transcription"
-          : "smart-notes",
+
+      aiMode,
+      analysisMode,
+      analysisModel,
+
       usage:
         limitStatus.usage + 1,
+
       limit:
         limitStatus.limit,
+
       remaining: Math.max(
         limitStatus.limit -
           limitStatus.usage -
           1,
         0
       ),
+
       plan:
         limitStatus.subscription.plan
     });
   } catch (error) {
     console.error(
-      "Meeting transcription error:",
+      "Meeting transcription and analysis error:",
       error
     );
 
