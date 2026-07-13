@@ -34,17 +34,16 @@ function settingsUrl(
   request: NextRequest,
   params: Record<string, string>
 ) {
+  const configuredAppUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+
   const base =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    `${request.nextUrl.origin}/clientpilotai`;
+    configuredAppUrl ||
+    "https://www.makzora.com/clientpilotai";
 
-  const url = new URL(
-    `${base}/dashboard/settings`
-  );
+  const url = new URL(`${base}/dashboard/settings`);
 
-  for (const [key, value] of Object.entries(
-    params
-  )) {
+  for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 

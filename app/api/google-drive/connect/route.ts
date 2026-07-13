@@ -16,14 +16,13 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return NextResponse.redirect(
-        new URL(
-          "/clientpilotai/login",
-          process.env.NEXT_PUBLIC_APP_URL ||
-            "https://www.makzora.com"
-        )
-      );
-    }
+  return NextResponse.redirect(
+    new URL(
+      "/clientpilotai/login",
+      "https://www.makzora.com"
+    )
+  );
+}
 
     const state = crypto.randomBytes(32).toString(
       "hex"
