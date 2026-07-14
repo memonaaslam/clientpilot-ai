@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent
+} from "react";
 
 type SalesUser = {
   id: string;
@@ -19,6 +24,18 @@ type SalesTeamManagerProps = {
 };
 
 type PlanId = "free" | "starter" | "pro" | "agency";
+type StatusFilter = "all" | "active" | "inactive";
+
+type StatusMessage = {
+  type: "success" | "error";
+  text: string;
+};
+
+type AccessCredentials = {
+  name: string;
+  staffId: string;
+  pin: string;
+};
 
 const SALES_USER_LIMITS: Record<PlanId, number> = {
   free: 0,
@@ -50,8 +67,14 @@ function normalizePlan(plan: string): PlanId {
   return "free";
 }
 
+function isActiveSalesUser(status?: string | null) {
+  return String(status || "").toLowerCase() === "active";
+}
+
 function formatDate(value?: string | null) {
-  if (!value) return "Recently created";
+  if (!value) {
+    return "Recently created";
+  }
 
   const date = new Date(value);
 
@@ -65,25 +88,53 @@ function formatDate(value?: string | null) {
   }).format(date);
 }
 
+function getInitials(name?: string | null) {
+  const words = String(name || "Sales User")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (words.length === 0) {
+    return "SU";
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${words[0][0]}${words[1][0]}`.toUpperCase();
+}
+
 export function SalesTeamManager({
   currentPlan
 }: SalesTeamManagerProps) {
   const [salesUsers, setSalesUsers] = useState<SalesUser[]>([]);
+
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(
-    null
-  );
+
+  const [updatingUserId, setUpdatingUserId] = useState<
+    string | null
+  >(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
 
-  const [message, setMessage] = useState("");
-  const [newAccess, setNewAccess] = useState<{
-    staffId: string;
-    pin: string;
-  } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilter>("all");
+
+  const [statusMessage, setStatusMessage] =
+    useState<StatusMessage | null>(null);
+
+  const [newAccess, setNewAccess] =
+    useState<AccessCredentials | null>(null);
+
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(
+    null
+  );
 
   const normalizedPlan = normalizePlan(currentPlan);
   const planLabel = PLAN_LABELS[normalizedPlan];
@@ -91,9 +142,15 @@ export function SalesTeamManager({
 
   const activeCount = useMemo(
     () =>
-      salesUsers.filter((salesUser) => salesUser.status === "active")
-        .length,
+      salesUsers.filter((salesUser) =>
+        isActiveSalesUser(salesUser.status)
+      ).length,
     [salesUsers]
+  );
+
+  const inactiveCount = Math.max(
+    salesUsers.length - activeCount,
+    0
   );
 
   const remainingSeats = Math.max(
@@ -102,11 +159,84 @@ export function SalesTeamManager({
   );
 
   const hasSalesAccess = salesUserLimit > 0;
+
   const limitReached =
     hasSalesAccess && activeCount >= salesUserLimit;
 
-  async function loadSalesUsers() {
-    setLoading(true);
+  const seatUsagePercentage =
+    salesUserLimit > 0
+      ? Math.min(
+          100,
+          Math.round((activeCount / salesUserLimit) * 100)
+        )
+      : 0;
+
+  const filteredSalesUsers = useMemo(() => {
+    const normalizedSearch = searchQuery
+      .trim()
+      .toLowerCase();
+
+    return salesUsers
+      .filter((salesUser) => {
+        const active = isActiveSalesUser(
+          salesUser.status
+        );
+
+        const matchesStatus =
+          statusFilter === "all" ||
+          (statusFilter === "active" && active) ||
+          (statusFilter === "inactive" && !active);
+
+        const matchesSearch =
+          !normalizedSearch ||
+          salesUser.name
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          salesUser.staff_id
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          String(salesUser.email || "")
+            .toLowerCase()
+            .includes(normalizedSearch) ||
+          String(salesUser.phone || "")
+            .toLowerCase()
+            .includes(normalizedSearch);
+
+        return matchesStatus && matchesSearch;
+      })
+      .sort((firstUser, secondUser) => {
+        const firstActive = isActiveSalesUser(
+          firstUser.status
+        );
+
+        const secondActive = isActiveSalesUser(
+          secondUser.status
+        );
+
+        if (firstActive !== secondActive) {
+          return firstActive ? -1 : 1;
+        }
+
+        const firstDate = firstUser.created_at
+          ? new Date(firstUser.created_at).getTime()
+          : 0;
+
+        const secondDate = secondUser.created_at
+          ? new Date(secondUser.created_at).getTime()
+          : 0;
+
+        return secondDate - firstDate;
+      });
+  }, [salesUsers, searchQuery, statusFilter]);
+
+  async function loadSalesUsers(
+    mode: "initial" | "refresh" = "initial"
+  ) {
+    if (mode === "refresh") {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
 
     try {
       const response = await fetch(
@@ -119,17 +249,33 @@ export function SalesTeamManager({
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || "Unable to load sales users.");
-        setSalesUsers([]);
-        return;
+        throw new Error(
+          data.error || "Unable to load sales users."
+        );
       }
 
-      setSalesUsers(data.salesUsers || []);
-    } catch {
-      setMessage("Unable to connect to the sales users service.");
+      setSalesUsers(
+        Array.isArray(data.salesUsers)
+          ? data.salesUsers
+          : []
+      );
+
+      setLastUpdated(new Date());
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to the sales users service.";
+
+      setStatusMessage({
+        type: "error",
+        text
+      });
+
       setSalesUsers([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -138,16 +284,30 @@ export function SalesTeamManager({
   }, []);
 
   async function createSalesUser(
-    event: React.FormEvent<HTMLFormElement>
+    event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    if (!hasSalesAccess || limitReached) {
+    if (!hasSalesAccess) {
+      setStatusMessage({
+        type: "error",
+        text: "Upgrade your plan to create sales users."
+      });
+
+      return;
+    }
+
+    if (limitReached) {
+      setStatusMessage({
+        type: "error",
+        text: `Your ${planLabel} plan has used all included active sales seats.`
+      });
+
       return;
     }
 
     setSaving(true);
-    setMessage("");
+    setStatusMessage(null);
     setNewAccess(null);
 
     try {
@@ -169,13 +329,13 @@ export function SalesTeamManager({
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(
+        throw new Error(
           data.error || "Unable to create sales user."
         );
-        return;
       }
 
       setNewAccess({
+        name: data.salesUser?.name || name,
         staffId: data.salesUser.staff_id,
         pin: data.temporaryPin
       });
@@ -183,25 +343,62 @@ export function SalesTeamManager({
       setName("");
       setEmail("");
       setPhone("");
-      setMessage("Sales user created successfully.");
 
-      await loadSalesUsers();
-    } catch {
-      setMessage(
-        "Unable to connect to the sales user service."
-      );
+      setStatusMessage({
+        type: "success",
+        text: "Sales user created successfully. Save the login details shown below."
+      });
+
+      await loadSalesUsers("refresh");
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to the sales user service.";
+
+      setStatusMessage({
+        type: "error",
+        text
+      });
     } finally {
       setSaving(false);
     }
   }
 
-  async function setStatus(id: string, status: string) {
-    setUpdatingUserId(id);
-    setMessage("");
+  async function setStatus(
+    salesUser: SalesUser,
+    status: "active" | "inactive"
+  ) {
+    if (
+      status === "active" &&
+      activeCount >= salesUserLimit
+    ) {
+      setStatusMessage({
+        type: "error",
+        text: `Your ${planLabel} plan allows ${salesUserLimit} active sales user${
+          salesUserLimit === 1 ? "" : "s"
+        }.`
+      });
+
+      return;
+    }
+
+    if (status === "inactive") {
+      const confirmed = window.confirm(
+        `Deactivate ${salesUser.name}? They will no longer be able to access the sales workspace until reactivated.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    setUpdatingUserId(salesUser.id);
+    setStatusMessage(null);
 
     try {
       const response = await fetch(
-        `/clientpilotai/api/sales-users/${id}`,
+        `/clientpilotai/api/sales-users/${salesUser.id}`,
         {
           method: "PATCH",
           headers: {
@@ -214,42 +411,51 @@ export function SalesTeamManager({
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(
+        throw new Error(
           data.error || "Unable to update sales user."
         );
-        return;
       }
 
-      setMessage(
-        status === "active"
-          ? "Sales user reactivated successfully."
-          : "Sales user deactivated successfully."
-      );
+      setStatusMessage({
+        type: "success",
+        text:
+          status === "active"
+            ? `${salesUser.name} was reactivated successfully.`
+            : `${salesUser.name} was deactivated successfully.`
+      });
 
-      await loadSalesUsers();
-    } catch {
-      setMessage(
-        "Unable to connect to the sales user service."
-      );
+      await loadSalesUsers("refresh");
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to the sales user service.";
+
+      setStatusMessage({
+        type: "error",
+        text
+      });
     } finally {
       setUpdatingUserId(null);
     }
   }
 
-  async function resetPin(id: string) {
-    const confirmReset = window.confirm(
-      "Reset PIN for this sales person?"
+  async function resetPin(salesUser: SalesUser) {
+    const confirmed = window.confirm(
+      `Generate a new PIN for ${salesUser.name}? Their previous PIN will stop working.`
     );
 
-    if (!confirmReset) return;
+    if (!confirmed) {
+      return;
+    }
 
-    setUpdatingUserId(id);
-    setMessage("");
+    setUpdatingUserId(salesUser.id);
+    setStatusMessage(null);
     setNewAccess(null);
 
     try {
       const response = await fetch(
-        `/clientpilotai/api/sales-users/${id}`,
+        `/clientpilotai/api/sales-users/${salesUser.id}`,
         {
           method: "PATCH",
           headers: {
@@ -264,327 +470,824 @@ export function SalesTeamManager({
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.error || "Unable to reset PIN.");
-        return;
+        throw new Error(
+          data.error || "Unable to reset PIN."
+        );
       }
 
       setNewAccess({
-        staffId: data.salesUser.staff_id,
+        name: data.salesUser?.name || salesUser.name,
+        staffId:
+          data.salesUser?.staff_id ||
+          salesUser.staff_id,
         pin: data.temporaryPin
       });
 
-      setMessage("New PIN generated successfully.");
-    } catch {
-      setMessage(
-        "Unable to connect to the sales user service."
-      );
+      setStatusMessage({
+        type: "success",
+        text: `A new PIN was generated for ${salesUser.name}. Save it before leaving this page.`
+      });
+    } catch (error) {
+      const text =
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to the sales user service.";
+
+      setStatusMessage({
+        type: "error",
+        text
+      });
     } finally {
       setUpdatingUserId(null);
     }
   }
 
-  const messageIsError =
-    message.toLowerCase().includes("unable") ||
-    message.toLowerCase().includes("does not include") ||
-    message.toLowerCase().includes("allows") ||
-    message.toLowerCase().includes("upgrade");
+  async function copyText(
+    text: string,
+    successText: string
+  ) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea =
+          document.createElement("textarea");
+
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+
+      setStatusMessage({
+        type: "success",
+        text: successText
+      });
+    } catch {
+      setStatusMessage({
+        type: "error",
+        text: "Unable to copy the login details. Please copy them manually."
+      });
+    }
+  }
 
   return (
-    <div className="sales-team-layout">
-      <section className="sales-team-hero">
-        <div>
-          <span className="badge">
-            {planLabel} Sales Team
+    <div className="cp-sales-team-page">
+      <section className="cp-sales-team-hero">
+        <div className="cp-sales-team-hero-copy">
+          <span className="cp-sales-team-eyebrow">
+            ClientPilot AI Sales Team
           </span>
 
-          <h2>Owner + sales users workspace</h2>
+          <h1>Build and control your sales workspace.</h1>
 
           <p>
-            Your {planLabel} plan includes{" "}
-            {salesUserLimit === 0
-              ? "no sales users"
-              : `${salesUserLimit} active sales user${
-                  salesUserLimit === 1 ? "" : "s"
-                }`}
-            . Each sales person receives a unique Staff ID and
-            PIN for their own sales workspace.
+            Create secure sales accounts, manage active seats,
+            reset access PINs and keep every team member under
+            the correct subscription limit.
           </p>
+
+          <div className="cp-sales-team-hero-actions">
+            <Link
+              href="/sales/login"
+              className="cp-sales-team-login-link"
+            >
+              Open Sales Login
+            </Link>
+
+            <Link
+              href="/dashboard/sales-activity"
+              className="cp-sales-team-activity-link"
+            >
+              View Sales Activity
+            </Link>
+          </div>
         </div>
 
-        <div className="seat-meter-card">
-          <strong>
-            {activeCount}/{salesUserLimit}
-          </strong>
+        <div className="cp-sales-team-plan-panel">
+          <div className="cp-sales-team-plan-head">
+            <div>
+              <span>Current subscription</span>
+              <strong>{planLabel}</strong>
+            </div>
 
-          <span>Included sales seats used</span>
+            <span className="cp-sales-team-plan-badge">
+              {hasSalesAccess
+                ? `${salesUserLimit} seat${
+                    salesUserLimit === 1 ? "" : "s"
+                  }`
+                : "Owner only"}
+            </span>
+          </div>
+
+          <div className="cp-sales-team-seat-visual">
+            <div className="cp-sales-team-seat-number">
+              <strong>{activeCount}</strong>
+              <span>of {salesUserLimit}</span>
+            </div>
+
+            <div>
+              <span>Active sales seats used</span>
+
+              <div className="cp-sales-team-seat-track">
+                <i
+                  style={{
+                    width: `${seatUsagePercentage}%`
+                  }}
+                />
+              </div>
+
+              <small>
+                {hasSalesAccess
+                  ? remainingSeats > 0
+                    ? `${remainingSeats} active seat${
+                        remainingSeats === 1 ? "" : "s"
+                      } available`
+                    : "All included active seats are in use"
+                  : "Upgrade to add sales users"}
+              </small>
+            </div>
+          </div>
+
+          <div className="cp-sales-team-plan-stats">
+            <article>
+              <span>Total accounts</span>
+              <strong>{salesUsers.length}</strong>
+            </article>
+
+            <article>
+              <span>Active</span>
+              <strong>{activeCount}</strong>
+            </article>
+
+            <article>
+              <span>Inactive</span>
+              <strong>{inactiveCount}</strong>
+            </article>
+          </div>
         </div>
       </section>
 
+      {statusMessage ? (
+        <div
+          className={`cp-sales-team-status cp-sales-team-status-${statusMessage.type}`}
+          role="status"
+        >
+          <span>
+            {statusMessage.type === "success"
+              ? "OK"
+              : "!"}
+          </span>
+
+          <p>{statusMessage.text}</p>
+
+          <button
+            type="button"
+            onClick={() => setStatusMessage(null)}
+            aria-label="Close message"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
+
       {!hasSalesAccess ? (
-        <section className="upgrade-team-card">
-          <span className="badge">Upgrade Required</span>
+        <section className="cp-sales-team-upgrade">
+          <div className="cp-sales-team-upgrade-icon">
+            <span>UP</span>
+          </div>
 
-          <h3>Upgrade to unlock sales users</h3>
+          <div>
+            <span>Sales users are locked on Free</span>
+            <h2>Upgrade to create your sales team.</h2>
 
-          <p>
-            Starter includes 1 sales user, Pro includes 2 sales
-            users, and Agency includes 5 sales users.
-          </p>
+            <p>
+              Starter includes 1 sales user, Pro includes 2,
+              and Agency includes 5 active sales users.
+            </p>
+          </div>
 
           <Link
             href="/dashboard/subscription"
-            className="btn gold"
+            className="cp-sales-team-upgrade-button"
           >
-            View Plans
+            View subscription plans
           </Link>
         </section>
       ) : null}
 
-      <section className="sales-user-form-card">
-        <div className="section-head">
+      <div className="cp-sales-team-main-grid">
+        <section className="cp-sales-team-create-card">
+          <div className="cp-sales-team-card-heading">
+            <div>
+              <span>Secure account creation</span>
+              <h2>Add a sales person</h2>
+
+              <p>
+                ClientPilot automatically creates a unique Staff
+                ID and temporary four-digit PIN.
+              </p>
+            </div>
+
+            <div className="cp-sales-team-step-badge">
+              01
+            </div>
+          </div>
+
+          <form
+            className="cp-sales-team-form"
+            onSubmit={createSalesUser}
+          >
+            <label className="cp-sales-team-field">
+              <span>Sales person name</span>
+
+              <input
+                value={name}
+                onChange={(event) =>
+                  setName(event.target.value)
+                }
+                placeholder="Enter full name"
+                autoComplete="name"
+                required
+                disabled={
+                  !hasSalesAccess ||
+                  limitReached ||
+                  saving
+                }
+              />
+            </label>
+
+            <div className="cp-sales-team-field-grid">
+              <label className="cp-sales-team-field">
+                <span>Email address</span>
+
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
+                  placeholder="Optional"
+                  autoComplete="email"
+                  disabled={
+                    !hasSalesAccess ||
+                    limitReached ||
+                    saving
+                  }
+                />
+              </label>
+
+              <label className="cp-sales-team-field">
+                <span>Phone number</span>
+
+                <input
+                  value={phone}
+                  onChange={(event) =>
+                    setPhone(event.target.value)
+                  }
+                  placeholder="Optional"
+                  autoComplete="tel"
+                  disabled={
+                    !hasSalesAccess ||
+                    limitReached ||
+                    saving
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="cp-sales-team-form-note">
+              <span>Security</span>
+
+              <p>
+                The generated PIN is displayed once. Save it
+                securely and send it privately to the sales
+                person.
+              </p>
+            </div>
+
+            <button
+              className="cp-sales-team-create-button"
+              disabled={
+                !hasSalesAccess ||
+                limitReached ||
+                saving
+              }
+            >
+              <span>{saving ? "..." : "ID"}</span>
+
+              <div>
+                <strong>
+                  {saving
+                    ? "Creating secure account"
+                    : !hasSalesAccess
+                      ? "Upgrade required"
+                      : limitReached
+                        ? `${salesUserLimit} active seat${
+                            salesUserLimit === 1
+                              ? ""
+                              : "s"
+                          } used`
+                        : "Generate Staff ID and PIN"}
+                </strong>
+
+                <small>
+                  {saving
+                    ? "Please keep this page open"
+                    : limitReached
+                      ? "Deactivate a user or upgrade your plan"
+                      : `${remainingSeats} active seat${
+                          remainingSeats === 1 ? "" : "s"
+                        } available`}
+                </small>
+              </div>
+            </button>
+          </form>
+        </section>
+
+        <section className="cp-sales-team-access-card">
+          <div className="cp-sales-team-card-heading">
+            <div>
+              <span>Login credentials</span>
+              <h2>New account access</h2>
+
+              <p>
+                Copy the credentials immediately after creating
+                an account or resetting a PIN.
+              </p>
+            </div>
+
+            <div className="cp-sales-team-step-badge">
+              02
+            </div>
+          </div>
+
+          {newAccess ? (
+            <div className="cp-sales-team-credentials">
+              <div className="cp-sales-team-credential-user">
+                <div className="cp-sales-team-avatar">
+                  {getInitials(newAccess.name)}
+                </div>
+
+                <div>
+                  <span>Credentials prepared for</span>
+                  <strong>{newAccess.name}</strong>
+                </div>
+
+                <span className="cp-sales-team-one-time">
+                  Save now
+                </span>
+              </div>
+
+              <div className="cp-sales-team-credential-row">
+                <div>
+                  <span>Staff ID</span>
+                  <code>{newAccess.staffId}</code>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void copyText(
+                      newAccess.staffId,
+                      "Staff ID copied successfully."
+                    )
+                  }
+                >
+                  Copy
+                </button>
+              </div>
+
+              <div className="cp-sales-team-credential-row">
+                <div>
+                  <span>Temporary PIN</span>
+                  <code>{newAccess.pin}</code>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    void copyText(
+                      newAccess.pin,
+                      "Temporary PIN copied successfully."
+                    )
+                  }
+                >
+                  Copy
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="cp-sales-team-copy-all"
+                onClick={() =>
+                  void copyText(
+                    `ClientPilot AI Sales Login\nStaff ID: ${newAccess.staffId}\nPIN: ${newAccess.pin}`,
+                    "Complete sales login copied successfully."
+                  )
+                }
+              >
+                Copy complete login details
+              </button>
+
+              <div className="cp-sales-team-access-warning">
+                <span>Important</span>
+
+                <p>
+                  This temporary PIN will not be displayed again
+                  after you leave or refresh this page.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="cp-sales-team-access-empty">
+              <div>
+                <span>CP</span>
+              </div>
+
+              <h3>No new credentials</h3>
+
+              <p>
+                Create a sales user or reset an existing user’s
+                PIN. Their secure login details will appear here.
+              </p>
+
+              <Link href="/sales/login">
+                Preview sales login page
+              </Link>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className="cp-sales-team-directory">
+        <div className="cp-sales-team-directory-heading">
           <div>
-            <span className="badge">Create Sales User</span>
+            <span>Owner access control</span>
+            <h2>Sales team directory</h2>
 
-            <h3>Add a sales person</h3>
-
-            <p className="muted">
-              The PIN is shown once only. Save it and share it
-              privately with your sales person.
+            <p>
+              Search accounts, review status and control access
+              without deleting historical sales records.
             </p>
+          </div>
+
+          <div className="cp-sales-team-directory-count">
+            <strong>{filteredSalesUsers.length}</strong>
+            <span>accounts shown</span>
           </div>
         </div>
 
-        <form
-          className="sales-user-form"
-          onSubmit={createSalesUser}
-        >
-          <label>
-            Sales person name
+        <div className="cp-sales-team-toolbar">
+          <label className="cp-sales-team-search">
+            <span>⌕</span>
+
             <input
-              value={name}
+              type="search"
+              value={searchQuery}
               onChange={(event) =>
-                setName(event.target.value)
+                setSearchQuery(event.target.value)
               }
-              required
-              disabled={
-                !hasSalesAccess || limitReached || saving
-              }
+              placeholder="Search name, Staff ID, email or phone"
             />
           </label>
 
-          <label>
-            Email optional
-            <input
-              type="email"
-              value={email}
-              onChange={(event) =>
-                setEmail(event.target.value)
-              }
-              disabled={
-                !hasSalesAccess || limitReached || saving
-              }
-            />
-          </label>
-
-          <label>
-            Phone optional
-            <input
-              value={phone}
-              onChange={(event) =>
-                setPhone(event.target.value)
-              }
-              disabled={
-                !hasSalesAccess || limitReached || saving
-              }
-            />
-          </label>
-
-          {message ? (
-            <p
+          <div className="cp-sales-team-filters">
+            <button
+              type="button"
               className={
-                messageIsError
-                  ? "auth-error"
-                  : "auth-message"
+                statusFilter === "all" ? "active" : ""
+              }
+              onClick={() => setStatusFilter("all")}
+            >
+              All
+            </button>
+
+            <button
+              type="button"
+              className={
+                statusFilter === "active"
+                  ? "active"
+                  : ""
+              }
+              onClick={() => setStatusFilter("active")}
+            >
+              Active
+            </button>
+
+            <button
+              type="button"
+              className={
+                statusFilter === "inactive"
+                  ? "active"
+                  : ""
+              }
+              onClick={() =>
+                setStatusFilter("inactive")
               }
             >
-              {message}
-            </p>
-          ) : null}
-
-          {newAccess ? (
-            <div className="sales-access-box">
-              <span className="badge">Save This Login</span>
-
-              <h4>Sales user access created</h4>
-
-              <div>
-                <strong>Staff ID</strong>
-                <code>{newAccess.staffId}</code>
-              </div>
-
-              <div>
-                <strong>PIN</strong>
-                <code>{newAccess.pin}</code>
-              </div>
-
-              <p>This PIN will not be shown again.</p>
-            </div>
-          ) : null}
+              Inactive
+            </button>
+          </div>
 
           <button
-            className="btn gold"
-            disabled={
-              !hasSalesAccess || limitReached || saving
+            type="button"
+            className="cp-sales-team-refresh"
+            onClick={() =>
+              void loadSalesUsers("refresh")
             }
+            disabled={loading || refreshing}
           >
-            {saving
-              ? "Creating..."
-              : !hasSalesAccess
-                ? "Upgrade Required"
-                : limitReached
-                  ? `${salesUserLimit} Seat${
-                      salesUserLimit === 1 ? "" : "s"
-                    } Used`
-                  : "Generate Staff ID + PIN"}
+            <span>{refreshing ? "..." : "↻"}</span>
+            {refreshing ? "Refreshing" : "Refresh"}
           </button>
+        </div>
 
-          {hasSalesAccess && !limitReached ? (
-            <p className="muted">
-              {remainingSeats} sales seat
-              {remainingSeats === 1 ? "" : "s"} remaining.
-            </p>
-          ) : null}
-        </form>
-      </section>
+        <div className="cp-sales-team-update-time">
+          <span>
+            {lastUpdated
+              ? `Last updated ${lastUpdated.toLocaleTimeString(
+                  [],
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  }
+                )}`
+              : "Waiting for team data"}
+          </span>
 
-      <section className="sales-user-list-card">
-        <div className="section-head">
-          <div>
-            <span className="badge">Sales Users</span>
-            <h3>Team access</h3>
-          </div>
+          <span>
+            Active seats are counted against your current plan.
+          </span>
         </div>
 
         {loading ? (
-          <p className="muted">Loading sales users...</p>
+          <div className="cp-sales-team-loading-grid">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <article key={index}>
+                <div />
+                <span />
+                <strong />
+                <small />
+              </article>
+            ))}
+          </div>
         ) : null}
 
         {!loading && salesUsers.length === 0 ? (
-          <div className="empty-state mini">
-            <h2>No sales users yet</h2>
+          <div className="cp-sales-team-empty">
+            <div>SU</div>
 
-            <p className="muted">
+            <h3>No sales users yet</h3>
+
+            <p>
               {hasSalesAccess
-                ? "Create your first sales user using the form above."
-                : "Upgrade your plan to create sales users."}
+                ? "Create your first sales account using the secure form above."
+                : "Upgrade your subscription to begin adding sales users."}
             </p>
           </div>
         ) : null}
 
-        <div className="sales-user-list">
-          {salesUsers.map((salesUser) => {
-            const isUpdating =
-              updatingUserId === salesUser.id;
+        {!loading &&
+        salesUsers.length > 0 &&
+        filteredSalesUsers.length === 0 ? (
+          <div className="cp-sales-team-empty">
+            <div>⌕</div>
 
-            return (
-              <article
-                className="sales-user-row"
-                key={salesUser.id}
-              >
-                <div>
-                  <span
-                    className={
-                      salesUser.status === "active"
-                        ? "sales-status active"
-                        : "sales-status inactive"
-                    }
-                  >
-                    {salesUser.status}
-                  </span>
+            <h3>No matching accounts</h3>
 
-                  <h4>{salesUser.name}</h4>
+            <p>
+              Change the search phrase or status filter to see
+              more sales users.
+            </p>
 
-                  <p>
-                    Staff ID:{" "}
-                    <strong>{salesUser.staff_id}</strong>
-                  </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setStatusFilter("all");
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+        ) : null}
 
-                  <small>
-                    {salesUser.email
-                      ? `${salesUser.email} · `
-                      : ""}
-                    {formatDate(salesUser.created_at)}
-                  </small>
-                </div>
+        {!loading && filteredSalesUsers.length > 0 ? (
+          <div className="cp-sales-team-member-grid">
+            {filteredSalesUsers.map((salesUser) => {
+              const active = isActiveSalesUser(
+                salesUser.status
+              );
 
-                <div className="sales-user-actions">
-                  {salesUser.status === "active" ? (
+              const isUpdating =
+                updatingUserId === salesUser.id;
+
+              const canReactivate =
+                activeCount < salesUserLimit;
+
+              return (
+                <article
+                  className={`cp-sales-team-member-card ${
+                    active ? "is-active" : "is-inactive"
+                  }`}
+                  key={salesUser.id}
+                >
+                  <div className="cp-sales-team-member-head">
+                    <div className="cp-sales-team-avatar">
+                      {getInitials(salesUser.name)}
+                    </div>
+
+                    <div>
+                      <span>Sales account</span>
+                      <h3>{salesUser.name}</h3>
+                    </div>
+
+                    <span
+                      className={`cp-sales-team-member-status ${
+                        active ? "active" : "inactive"
+                      }`}
+                    >
+                      <i />
+                      {salesUser.status || "Unknown"}
+                    </span>
+                  </div>
+
+                  <div className="cp-sales-team-member-id">
+                    <span>Staff ID</span>
+
+                    <div>
+                      <code>{salesUser.staff_id}</code>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void copyText(
+                            salesUser.staff_id,
+                            "Staff ID copied successfully."
+                          )
+                        }
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="cp-sales-team-member-details">
+                    <div>
+                      <span>Email</span>
+                      <strong>
+                        {salesUser.email ||
+                          "Not provided"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Phone</span>
+                      <strong>
+                        {salesUser.phone ||
+                          "Not provided"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Role</span>
+                      <strong>
+                        {salesUser.role || "Sales"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Created</span>
+                      <strong>
+                        {formatDate(
+                          salesUser.created_at
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="cp-sales-team-member-actions">
+                    {active ? (
+                      <button
+                        type="button"
+                        className="cp-sales-team-deactivate"
+                        disabled={isUpdating}
+                        onClick={() =>
+                          void setStatus(
+                            salesUser,
+                            "inactive"
+                          )
+                        }
+                      >
+                        {isUpdating
+                          ? "Updating..."
+                          : "Deactivate access"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="cp-sales-team-reactivate"
+                        disabled={
+                          isUpdating ||
+                          !canReactivate
+                        }
+                        onClick={() =>
+                          void setStatus(
+                            salesUser,
+                            "active"
+                          )
+                        }
+                      >
+                        {isUpdating
+                          ? "Updating..."
+                          : canReactivate
+                            ? "Reactivate access"
+                            : "No active seat available"}
+                      </button>
+                    )}
+
                     <button
                       type="button"
+                      className="cp-sales-team-reset-pin"
                       disabled={isUpdating}
                       onClick={() =>
-                        void setStatus(
-                          salesUser.id,
-                          "inactive"
-                        )
+                        void resetPin(salesUser)
                       }
                     >
-                      {isUpdating
-                        ? "Updating..."
-                        : "Deactivate"}
+                      Reset PIN
                     </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={
-                        isUpdating ||
-                        activeCount >= salesUserLimit
-                      }
-                      onClick={() =>
-                        void setStatus(
-                          salesUser.id,
-                          "active"
-                        )
-                      }
-                    >
-                      {isUpdating
-                        ? "Updating..."
-                        : "Reactivate"}
-                    </button>
-                  )}
-
-                  <button
-                    type="button"
-                    disabled={isUpdating}
-                    onClick={() =>
-                      void resetPin(salesUser.id)
-                    }
-                  >
-                    Reset PIN
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
-      <section className="custom-sales-addon-card">
-        <div>
-          <span className="badge">Sales Team Limits</span>
-
-          <h3>Need more sales users?</h3>
+      <section className="cp-sales-team-plans">
+        <div className="cp-sales-team-plans-copy">
+          <span>Sales-user limits</span>
+          <h2>Choose the team size that fits your business.</h2>
 
           <p>
-            Starter includes 1 sales user, Pro includes 2, and
-            Agency includes 5. Contact Makzora for a custom
-            enterprise team plan.
+            Only active sales users consume seats. Inactive
+            accounts remain available for historical records and
+            can be reactivated when a seat becomes free.
           </p>
         </div>
 
-        <Link href="/contact" className="btn secondary">
-          Contact Makzora
-        </Link>
+        <div className="cp-sales-team-plan-options">
+          <article
+            className={
+              normalizedPlan === "starter"
+                ? "current"
+                : ""
+            }
+          >
+            <span>Starter</span>
+            <strong>1</strong>
+            <small>active sales user</small>
+          </article>
+
+          <article
+            className={
+              normalizedPlan === "pro"
+                ? "current"
+                : ""
+            }
+          >
+            <span>Pro</span>
+            <strong>2</strong>
+            <small>active sales users</small>
+          </article>
+
+          <article
+            className={
+              normalizedPlan === "agency"
+                ? "current"
+                : ""
+            }
+          >
+            <span>Agency</span>
+            <strong>5</strong>
+            <small>active sales users</small>
+          </article>
+        </div>
+
+        <div className="cp-sales-team-plan-links">
+          <Link href="/dashboard/subscription">
+            Manage subscription
+          </Link>
+
+          <Link href="/contact">
+            Contact Makzora
+          </Link>
+        </div>
       </section>
     </div>
   );
