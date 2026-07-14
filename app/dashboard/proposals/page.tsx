@@ -1,6 +1,11 @@
+import Link from "next/link";
+
 import { DashboardShell } from "@/components/DashboardShell";
+import { PremiumEmptyState } from "@/components/PremiumUI";
 import { ProposalManager } from "@/components/ProposalManager";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
+
+export const dynamic = "force-dynamic";
 
 type ClientOption = {
   id: string;
@@ -17,10 +22,16 @@ export default async function ProposalsPage() {
   if (!user) {
     return (
       <DashboardShell>
-        <div className="empty-state">
-          <h2>Please sign in first</h2>
-          <p className="muted">Login to create and manage proposals.</p>
-        </div>
+        <PremiumEmptyState
+          icon="🔐"
+          title="Please sign in first"
+          description="Login to create and manage proposals."
+          action={
+            <Link className="cp-premium-button cp-button-gold" href="/login">
+              Open Login
+            </Link>
+          }
+        />
       </DashboardShell>
     );
   }
@@ -38,22 +49,25 @@ export default async function ProposalsPage() {
 
   return (
     <DashboardShell>
-      <div className="page-hero">
-        <div>
-          <span className="badge">Proposal Builder</span>
-          <h1 style={{ fontSize: 46 }}>Proposals</h1>
-          <p className="muted">
-            Create, edit, manage, and recycle professional client proposals.
-          </p>
-        </div>
+      <div className="cp-page">
+        <section className="cp-proposals-page-hero">
+          <div>
+            <span className="cp-eyebrow">Proposal Command Center</span>
+            <h1>Proposals</h1>
+            <p>
+              Create, review, approve, export, share, and manage professional
+              client proposals from one premium workspace.
+            </p>
+          </div>
 
-        <div className="hero-mini-card">
-          <strong>Edit</strong>
-          <span>Ready</span>
-        </div>
+          <div className="cp-proposals-page-mark">
+            <strong>AI</strong>
+            <span>Proposal ready</span>
+          </div>
+        </section>
+
+        <ProposalManager clients={clients} />
       </div>
-
-      <ProposalManager clients={clients} />
     </DashboardShell>
   );
 }
