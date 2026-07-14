@@ -1,5 +1,5 @@
 "use client";
-
+import { OwnerExpenseActions } from "@/components/OwnerExpenseActions";
 import {
   useCallback,
   useEffect,
@@ -1588,6 +1588,7 @@ export function OwnerDashboard({
                   <th>Category</th>
                   <th>Date</th>
                   <th>Amount</th>
+<th>Actions</th>
                 </tr>
               </thead>
 
@@ -1638,6 +1639,14 @@ export function OwnerDashboard({
                               )}
                         </strong>
                       </td>
+<td>
+  <OwnerExpenseActions
+    expense={expense}
+    onChanged={() =>
+      loadDashboard("refresh")
+    }
+  />
+</td>
                     </tr>
                   )
                 )}
