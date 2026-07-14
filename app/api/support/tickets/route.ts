@@ -8,6 +8,10 @@ import {
   getUserSubscription
 } from "@/lib/subscription";
 
+import {
+  notifyOwnerOfNewTicket
+} from "@/lib/support-email";
+
 export const runtime = "nodejs";
 
 const ALLOWED_CATEGORIES = new Set([
@@ -435,6 +439,45 @@ export async function POST(
         }
       );
     }
+
+    const createdTicket =
+      data as unknown as {
+        id: string;
+        ticket_number: string;
+        subject: string;
+        category: string;
+        priority: string;
+        status: string;
+        plan: string;
+      };
+
+    await notifyOwnerOfNewTicket(
+      {
+        id: createdTicket.id,
+
+        ticketNumber:
+          createdTicket.ticket_number,
+
+        subject:
+          createdTicket.subject,
+
+        customerName,
+        customerEmail,
+
+        category:
+          createdTicket.category,
+
+        priority:
+          createdTicket.priority,
+
+        plan:
+          createdTicket.plan,
+
+        status:
+          createdTicket.status
+      },
+      message
+    );
 
     return NextResponse.json(
       {

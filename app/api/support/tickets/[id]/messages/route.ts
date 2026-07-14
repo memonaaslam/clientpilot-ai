@@ -8,6 +8,10 @@ import {
   createSupabaseAdminClient
 } from "@/lib/supabase-admin";
 
+import {
+  notifyOwnerOfClientReply
+} from "@/lib/support-email";
+
 export const runtime = "nodejs";
 
 type RouteContext = {
@@ -106,7 +110,9 @@ export async function POST(
       error: ticketError
     } = await supabase
       .from("support_tickets")
-      .select("id,user_id,status")
+      .select(
+        "id,user_id,status,ticket_number,subject,customer_name,customer_email,category,priority,plan"
+      )
       .eq("id", ticketId)
       .eq("user_id", user.id)
       .maybeSingle();
@@ -237,6 +243,9 @@ export async function POST(
       .trim()
       .toLowerCase();
 
+    let resultingStatus =
+      currentStatus || "open";
+
     if (
       [
         "waiting_for_client",
@@ -262,8 +271,50 @@ export async function POST(
           "Unable to reopen support ticket:",
           reopenError
         );
+      } else {
+        resultingStatus = "open";
       }
     }
+
+    await notifyOwnerOfClientReply(
+      {
+        id: String(ticket.id),
+
+        ticketNumber: String(
+          ticket.ticket_number || ""
+        ),
+
+        subject: String(
+          ticket.subject || ""
+        ),
+
+        customerName: String(
+          ticket.customer_name ||
+            "ClientPilot AI Customer"
+        ),
+
+        customerEmail: String(
+          ticket.customer_email ||
+            user.email ||
+            ""
+        ),
+
+        category: String(
+          ticket.category || "other"
+        ),
+
+        priority: String(
+          ticket.priority || "normal"
+        ),
+
+        plan: String(
+          ticket.plan || "free"
+        ),
+
+        status: resultingStatus
+      },
+      message
+    );
 
     return NextResponse.json(
       {

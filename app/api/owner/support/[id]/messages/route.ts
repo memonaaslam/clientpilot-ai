@@ -9,6 +9,10 @@ import {
   createSupabaseAdminClient
 } from "@/lib/supabase-admin";
 
+import {
+  notifyClientOfOwnerReply
+} from "@/lib/support-email";
+
 export const runtime = "nodejs";
 
 type RouteContext = {
@@ -125,7 +129,9 @@ export async function POST(
       error: ticketError
     } = await admin
       .from("support_tickets")
-      .select("id,status")
+      .select(
+        "id,status,ticket_number,subject,customer_name,customer_email,category,priority,plan"
+      )
       .eq("id", ticketId)
       .maybeSingle();
 
@@ -275,6 +281,50 @@ export async function POST(
       } else {
         resultingStatus = nextStatus;
       }
+    }
+
+    /*
+      Private internal notes are never emailed
+      to the customer.
+    */
+    if (!isInternal) {
+      await notifyClientOfOwnerReply(
+        {
+          id: String(ticket.id),
+
+          ticketNumber: String(
+            ticket.ticket_number || ""
+          ),
+
+          subject: String(
+            ticket.subject || ""
+          ),
+
+          customerName: String(
+            ticket.customer_name ||
+              "ClientPilot AI Customer"
+          ),
+
+          customerEmail: String(
+            ticket.customer_email || ""
+          ),
+
+          category: String(
+            ticket.category || "other"
+          ),
+
+          priority: String(
+            ticket.priority || "normal"
+          ),
+
+          plan: String(
+            ticket.plan || "free"
+          ),
+
+          status: resultingStatus
+        },
+        message
+      );
     }
 
     return NextResponse.json(
