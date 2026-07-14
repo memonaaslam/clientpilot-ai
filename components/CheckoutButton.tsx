@@ -1,20 +1,68 @@
 "use client";
 
 import { useState } from "react";
-import type { PlanId } from "@/lib/plans";
-import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
-const LEMON_CHECKOUT_LINKS: Record<Exclude<PlanId, "free">, string> = {
-  starter:
-    "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/43096221-9517-4b43-8b1c-741fef30d87f",
-  pro:
-    "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/379bf850-dce0-4e3c-a727-71e69ce1cf39",
-  agency:
-    "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/7d490de8-6878-44e1-ae4b-806776fe4a90"
-};
+import type {
+  PlanId
+} from "@/lib/plans";
 
-export function CheckoutButton({ plan }: { plan: PlanId }) {
-  const [loading, setLoading] = useState(false);
+import {
+  createSupabaseBrowserClient
+} from "@/lib/supabase-browser";
+
+type PaidPlan =
+  Exclude<PlanId, "free">;
+
+const LEMON_CHECKOUT_LINKS:
+  Record<PaidPlan, string | undefined> = {
+    starter:
+      process.env
+        .NEXT_PUBLIC_LEMON_STARTER_CHECKOUT_URL,
+
+    pro:
+      process.env
+        .NEXT_PUBLIC_LEMON_PRO_CHECKOUT_URL,
+
+    agency:
+      process.env
+        .NEXT_PUBLIC_LEMON_AGENCY_CHECKOUT_URL
+  };
+
+function getCheckoutUrl(
+  plan: PaidPlan
+) {
+  const value =
+    LEMON_CHECKOUT_LINKS[plan]?.trim();
+
+  if (!value) {
+    throw new Error(
+      `${plan} checkout URL is not configured.`
+    );
+  }
+
+  const url = new URL(value);
+
+  if (
+    url.protocol !== "https:" ||
+    !url.hostname.endsWith(
+      "lemonsqueezy.com"
+    )
+  ) {
+    throw new Error(
+      `${plan} checkout URL is invalid.`
+    );
+  }
+
+  return url;
+}
+
+export function CheckoutButton({
+  plan
+}: {
+  plan: PlanId;
+}) {
+  const [loading, setLoading] =
+    useState(false);
 
   async function startCheckout() {
     if (plan === "free") {
@@ -24,14 +72,8 @@ export function CheckoutButton({ plan }: { plan: PlanId }) {
     setLoading(true);
 
     try {
-      const checkoutUrl = LEMON_CHECKOUT_LINKS[plan];
-
-      if (!checkoutUrl) {
-        alert("Checkout link is not configured for this plan.");
-        return;
-      }
-
-      const supabase = createSupabaseBrowserClient();
+      const supabase =
+        createSupabaseBrowserClient();
 
       const {
         data: { user },
@@ -39,12 +81,18 @@ export function CheckoutButton({ plan }: { plan: PlanId }) {
       } = await supabase.auth.getUser();
 
       if (error || !user) {
-        alert("Please log in before subscribing.");
-        window.location.href = "/clientpilotai/login";
+        alert(
+          "Please log in before subscribing."
+        );
+
+        window.location.href =
+          "/clientpilotai/login";
+
         return;
       }
 
-      const url = new URL(checkoutUrl);
+      const url =
+        getCheckoutUrl(plan);
 
       url.searchParams.set(
         "checkout[custom][user_id]",
@@ -68,9 +116,22 @@ export function CheckoutButton({ plan }: { plan: PlanId }) {
         );
       }
 
-      window.location.href = url.toString();
-    } catch {
-      alert("Unable to open checkout. Please try again.");
+      window.location.href =
+        url.toString();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Unable to open checkout.";
+
+      console.error(
+        "Lemon Squeezy checkout error:",
+        error
+      );
+
+      alert(
+        `${message} Please contact info@makzora.com if the problem continues.`
+      );
     } finally {
       setLoading(false);
     }
@@ -84,10 +145,14 @@ export function CheckoutButton({ plan }: { plan: PlanId }) {
     <button
       className="btn gold"
       type="button"
-      onClick={() => void startCheckout()}
+      onClick={() =>
+        void startCheckout()
+      }
       disabled={loading}
     >
-      {loading ? "Opening checkout..." : "Subscribe"}
+      {loading
+        ? "Opening checkout..."
+        : "Subscribe"}
     </button>
   );
 }

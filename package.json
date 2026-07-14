@@ -16,7 +16,6 @@
     "openai": "^6.46.0",
     "react": "latest",
     "react-dom": "latest",
-    "stripe": "^22.3.0",
     "zod": "latest"
   },
   "devDependencies": {
