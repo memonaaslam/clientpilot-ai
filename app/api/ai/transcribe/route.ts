@@ -1,15 +1,31 @@
 import OpenAI, { toFile } from "openai";
 import { NextResponse } from "next/server";
 
-import { analyzeMeetingWithAI } from "@/lib/ai/analyze-meeting";
-import { getPlanLimitStatus } from "@/lib/subscription";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import {
+  analyzeMeetingWithAI
+} from "@/lib/ai/analyze-meeting";
+
+import {
+  attachOwnerApiUsageToMeeting,
+  calculateTranscriptionCostUsd,
+  recordOwnerApiUsage,
+  type TranscriptionUsageSummary
+} from "@/lib/owner-api-usage";
+
+import {
+  getPlanLimitStatus
+} from "@/lib/subscription";
+
+import {
+  createSupabaseServerClient
+} from "@/lib/supabase-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-const MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024;
+const MAX_AUDIO_SIZE_BYTES =
+  25 * 1024 * 1024;
 
 const SUPPORTED_AUDIO_EXTENSIONS = [
   ".mp3",
@@ -34,6 +50,16 @@ const SUPPORTED_AUDIO_TYPES = [
   "video/webm"
 ];
 
+const EMPTY_TRANSCRIPTION_USAGE:
+  TranscriptionUsageSummary = {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    audioSeconds: 0,
+    audioInputTokens: 0,
+    textInputTokens: 0
+  };
+
 function createOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
 
@@ -43,7 +69,9 @@ function createOpenAIClient() {
     );
   }
 
-  return new OpenAI({ apiKey });
+  return new OpenAI({
+    apiKey
+  });
 }
 
 function isFile(
@@ -58,7 +86,9 @@ function isFile(
   );
 }
 
-function getFileExtension(fileName: string) {
+function getFileExtension(
+  fileName: string
+) {
   const index = fileName.lastIndexOf(".");
 
   return index === -1
@@ -77,15 +107,23 @@ function isTextFile(file: File) {
 }
 
 function isSupportedAudioFile(file: File) {
-  const extension = getFileExtension(file.name);
+  const extension = getFileExtension(
+    file.name
+  );
 
   return (
-    SUPPORTED_AUDIO_EXTENSIONS.includes(extension) ||
-    SUPPORTED_AUDIO_TYPES.includes(file.type)
+    SUPPORTED_AUDIO_EXTENSIONS.includes(
+      extension
+    ) ||
+    SUPPORTED_AUDIO_TYPES.includes(
+      file.type
+    )
   );
 }
 
-async function getTextFromTextFile(file: File) {
+async function getTextFromTextFile(
+  file: File
+) {
   if (!isTextFile(file)) {
     return "";
   }
@@ -93,14 +131,125 @@ async function getTextFromTextFile(file: File) {
   return (await file.text()).trim();
 }
 
-async function transcribeAudioFile(file: File) {
+function getUsageNumber(
+  record: Record<string, unknown>,
+  key: string
+) {
+  const value = Number(record[key]);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return value;
+}
+
+function getUsageRecord(
+  value: unknown
+): Record<string, unknown> {
+  if (
+    value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+}
+
+function extractTranscriptionUsage(
+  transcription: unknown
+): TranscriptionUsageSummary {
+  const transcriptionRecord =
+    getUsageRecord(transcription);
+
+  const usageRecord = getUsageRecord(
+    transcriptionRecord.usage
+  );
+
+  const usageType = String(
+    usageRecord.type || ""
+  ).toLowerCase();
+
+  if (usageType === "duration") {
+    const audioSeconds = getUsageNumber(
+      usageRecord,
+      "seconds"
+    );
+
+    return {
+      ...EMPTY_TRANSCRIPTION_USAGE,
+      audioSeconds
+    };
+  }
+
+  const inputTokens = Math.round(
+    getUsageNumber(
+      usageRecord,
+      "input_tokens"
+    )
+  );
+
+  const outputTokens = Math.round(
+    getUsageNumber(
+      usageRecord,
+      "output_tokens"
+    )
+  );
+
+  const reportedTotal = Math.round(
+    getUsageNumber(
+      usageRecord,
+      "total_tokens"
+    )
+  );
+
+  const inputDetails = getUsageRecord(
+    usageRecord.input_token_details
+  );
+
+  const topLevelDuration =
+    getUsageNumber(
+      transcriptionRecord,
+      "duration"
+    );
+
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens:
+      reportedTotal ||
+      inputTokens + outputTokens,
+    audioSeconds: topLevelDuration,
+    audioInputTokens: Math.round(
+      getUsageNumber(
+        inputDetails,
+        "audio_tokens"
+      )
+    ),
+    textInputTokens: Math.round(
+      getUsageNumber(
+        inputDetails,
+        "text_tokens"
+      )
+    )
+  };
+}
+
+async function transcribeAudioFile(
+  file: File,
+  userId: string
+) {
   if (file.size <= 0) {
     throw new Error(
       "The selected audio file is empty."
     );
   }
 
-  if (file.size > MAX_AUDIO_SIZE_BYTES) {
+  if (
+    file.size > MAX_AUDIO_SIZE_BYTES
+  ) {
     throw new Error(
       "Audio file is larger than 25 MB. Please compress it or upload a shorter recording."
     );
@@ -112,50 +261,125 @@ async function transcribeAudioFile(file: File) {
     );
   }
 
-  const openai = createOpenAIClient();
-
-  const buffer = Buffer.from(
-    await file.arrayBuffer()
-  );
-
-  const uploadFile = await toFile(
-    buffer,
-    file.name || "meeting-audio.mp3",
-    {
-      type: file.type || "audio/mpeg"
-    }
-  );
-
   const model =
-    process.env.OPENAI_TRANSCRIPTION_MODEL?.trim() ||
+    process.env
+      .OPENAI_TRANSCRIPTION_MODEL?.trim() ||
     "gpt-4o-transcribe";
 
-  const transcription =
-    await openai.audio.transcriptions.create({
-      file: uploadFile,
+  try {
+    const openai = createOpenAIClient();
+
+    const buffer = Buffer.from(
+      await file.arrayBuffer()
+    );
+
+    const uploadFile = await toFile(
+      buffer,
+      file.name || "meeting-audio.mp3",
+      {
+        type:
+          file.type || "audio/mpeg"
+      }
+    );
+
+    const transcription =
+      await openai.audio.transcriptions.create({
+        file: uploadFile,
+        model,
+        response_format: "json"
+      });
+
+    const transcript =
+      transcription.text?.trim();
+
+    if (!transcript) {
+      throw new Error(
+        "The audio was processed, but no speech could be transcribed."
+      );
+    }
+
+    const usage =
+      extractTranscriptionUsage(
+        transcription
+      );
+
+    const estimatedCostUsd =
+      calculateTranscriptionCostUsd({
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        audioSeconds: usage.audioSeconds
+      });
+
+    const usageRecordId =
+      await recordOwnerApiUsage({
+        userId,
+        service: "audio_transcriptions",
+        operation: "meeting_transcription",
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        audioSeconds: usage.audioSeconds,
+        fileSizeBytes: file.size,
+        estimatedCostUsd,
+        status: "success",
+        metadata: {
+          file_name: file.name,
+          file_type:
+            file.type || null,
+          audio_input_tokens:
+            usage.audioInputTokens,
+          text_input_tokens:
+            usage.textInputTokens
+        }
+      });
+
+    return {
+      transcript,
       model,
-      response_format: "json"
+      usage: {
+        ...usage,
+        estimatedCostUsd
+      },
+      usageRecordId
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown transcription error.";
+
+    await recordOwnerApiUsage({
+      userId,
+      service: "audio_transcriptions",
+      operation: "meeting_transcription",
+      model,
+      fileSizeBytes: file.size,
+      status: "failed",
+      metadata: {
+        file_name: file.name,
+        file_type: file.type || null,
+        error: errorMessage
+      }
     });
 
-  const transcript =
-    transcription.text?.trim();
-
-  if (!transcript) {
-    throw new Error(
-      "The audio was processed, but no speech could be transcribed."
-    );
+    throw error;
   }
-
-  return transcript;
 }
 
-function createTaskDueDate(index: number) {
+function createTaskDueDate(
+  index: number
+) {
   const date = new Date();
 
   if (index === 0) {
     date.setHours(17, 0, 0, 0);
   } else {
-    date.setDate(date.getDate() + index);
+    date.setDate(
+      date.getDate() + index
+    );
+
     date.setHours(10, 0, 0, 0);
   }
 
@@ -170,7 +394,9 @@ async function createTimelineEntry({
   title
 }: {
   supabase: Awaited<
-    ReturnType<typeof createSupabaseServerClient>
+    ReturnType<
+      typeof createSupabaseServerClient
+    >
   >;
   userId: string;
   clientId: string | null;
@@ -181,14 +407,19 @@ async function createTimelineEntry({
     return;
   }
 
-  const payload: Record<string, unknown> = {
+  const payload: Record<
+    string,
+    unknown
+  > = {
     user_id: userId,
     client_id: clientId,
     event_type: "meeting_uploaded",
     title: "Meeting uploaded",
-    description: `AI transcription and analysis completed for: ${title}`,
+    description:
+      `AI transcription and analysis completed for: ${title}`,
     related_id: meetingId,
-    created_at: new Date().toISOString()
+    created_at:
+      new Date().toISOString()
   };
 
   const firstAttempt = await supabase
@@ -207,9 +438,11 @@ async function createTimelineEntry({
     client_id: clientId,
     type: "meeting_uploaded",
     title: "Meeting uploaded",
-    description: `AI transcription and analysis completed for: ${title}`,
+    description:
+      `AI transcription and analysis completed for: ${title}`,
     meeting_id: meetingId,
-    created_at: new Date().toISOString()
+    created_at:
+      new Date().toISOString()
   };
 
   await supabase
@@ -217,7 +450,9 @@ async function createTimelineEntry({
     .insert(fallbackPayload as never);
 }
 
-export async function POST(request: Request) {
+export async function POST(
+  request: Request
+) {
   try {
     const supabase =
       await createSupabaseServerClient();
@@ -228,8 +463,12 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Please login first." },
-        { status: 401 }
+        {
+          error: "Please login first."
+        },
+        {
+          status: 401
+        }
       );
     }
 
@@ -239,12 +478,16 @@ export async function POST(request: Request) {
     if (!limitStatus.allowed) {
       return NextResponse.json(
         {
-          error: `Monthly meeting upload limit reached for ${limitStatus.planConfig.name}. Upgrade your plan to upload more meetings.`,
+          error:
+            `Monthly meeting upload limit reached for ${limitStatus.planConfig.name}. Upgrade your plan to upload more meetings.`,
           usage: limitStatus.usage,
           limit: limitStatus.limit,
-          plan: limitStatus.subscription.plan
+          plan:
+            limitStatus.subscription.plan
         },
-        { status: 402 }
+        {
+          status: 402
+        }
       );
     }
 
@@ -254,7 +497,9 @@ export async function POST(request: Request) {
     const title =
       String(
         formData.get("title") ||
-          formData.get("meetingTitle") ||
+          formData.get(
+            "meetingTitle"
+          ) ||
           ""
       ).trim() || "Client Meeting";
 
@@ -281,17 +526,53 @@ export async function POST(request: Request) {
       | "text-file"
       | "audio-ai" = "pasted-notes";
 
-    if (!transcript && isFile(fileValue)) {
+    let transcriptionModel:
+      | string
+      | null = null;
+
+    let transcriptionUsage:
+      | (TranscriptionUsageSummary & {
+          estimatedCostUsd: number;
+        })
+      | null = null;
+
+    let transcriptionUsageRecordId:
+      | string
+      | null = null;
+
+    if (
+      !transcript &&
+      isFile(fileValue)
+    ) {
       if (isTextFile(fileValue)) {
         transcript =
-          await getTextFromTextFile(fileValue);
+          await getTextFromTextFile(
+            fileValue
+          );
 
-        transcriptionSource = "text-file";
+        transcriptionSource =
+          "text-file";
       } else {
-        transcript =
-          await transcribeAudioFile(fileValue);
+        const transcription =
+          await transcribeAudioFile(
+            fileValue,
+            user.id
+          );
 
-        transcriptionSource = "audio-ai";
+        transcript =
+          transcription.transcript;
+
+        transcriptionModel =
+          transcription.model;
+
+        transcriptionUsage =
+          transcription.usage;
+
+        transcriptionUsageRecordId =
+          transcription.usageRecordId;
+
+        transcriptionSource =
+          "audio-ai";
       }
     }
 
@@ -301,17 +582,25 @@ export async function POST(request: Request) {
           error:
             "Please upload an audio file or paste meeting notes."
         },
-        { status: 400 }
+        {
+          status: 400
+        }
       );
     }
 
     const {
       analysis: smart,
       mode: analysisMode,
-      model: analysisModel
+      model: analysisModel,
+      usage: analysisUsage,
+      usageRecordId:
+        analysisUsageRecordId
     } = await analyzeMeetingWithAI(
       title,
-      transcript
+      transcript,
+      {
+        userId: user.id
+      }
     );
 
     const basePayload: Record<
@@ -333,7 +622,8 @@ export async function POST(request: Request) {
     > = {
       ...basePayload,
       summary: smart.summary,
-      action_items: smart.actionItems
+      action_items:
+        smart.actionItems
     };
 
     let {
@@ -376,8 +666,12 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        {
+          error: error.message
+        },
+        {
+          status: 500
+        }
       );
     }
 
@@ -388,6 +682,14 @@ export async function POST(request: Request) {
       meeting.id
         ? String(meeting.id)
         : null;
+
+    await attachOwnerApiUsageToMeeting(
+      [
+        transcriptionUsageRecordId,
+        analysisUsageRecordId
+      ],
+      meetingId
+    );
 
     const taskRows =
       smart.actionItems.map(
@@ -422,7 +724,8 @@ export async function POST(request: Request) {
 
       if (!taskInsert.error) {
         createdTasks =
-          (taskInsert.data || []) as Record<
+          (taskInsert.data ||
+            []) as Record<
             string,
             unknown
           >[];
@@ -452,42 +755,68 @@ export async function POST(request: Request) {
       meetingId,
       transcript,
       transcriptionSource,
-      transcriptionModel:
-        transcriptionSource === "audio-ai"
-          ? process.env.OPENAI_TRANSCRIPTION_MODEL ||
-            "gpt-4o-transcribe"
-          : null,
+      transcriptionModel,
       summary: smart.summary,
-      actionItems: smart.actionItems,
+      actionItems:
+        smart.actionItems,
       tasks: createdTasks,
-      tasksCreated: createdTasks.length,
+      tasksCreated:
+        createdTasks.length,
       followUp: smart.followUp,
-      proposalPoints: smart.proposalPoints,
+      proposalPoints:
+        smart.proposalPoints,
       budget: smart.budget,
       timeline: smart.timeline,
-      decisionMaker: smart.decisionMaker,
-      requirements: smart.requirements,
+      decisionMaker:
+        smart.decisionMaker,
+      requirements:
+        smart.requirements,
       painPoints: smart.painPoints,
       objections: smart.objections,
-      closingProbability: smart.closingProbability,
+      closingProbability:
+        smart.closingProbability,
       sentiment: smart.sentiment,
-      proposalDraft: smart.proposalDraft,
+      proposalDraft:
+        smart.proposalDraft,
       autopilot: {
-        temperature: smart.temperature,
+        temperature:
+          smart.temperature,
         score: smart.score,
         stage: smart.stage,
-        nextBestAction: smart.nextBestAction,
-        whatsappMessage: smart.whatsappMessage,
-        emailMessage: smart.emailMessage,
-        automationPlan: smart.automationPlan,
-        missingInfo: smart.missingInfo,
-        dealSignals: smart.dealSignals,
-        riskSignals: smart.riskSignals
+        nextBestAction:
+          smart.nextBestAction,
+        whatsappMessage:
+          smart.whatsappMessage,
+        emailMessage:
+          smart.emailMessage,
+        automationPlan:
+          smart.automationPlan,
+        missingInfo:
+          smart.missingInfo,
+        dealSignals:
+          smart.dealSignals,
+        riskSignals:
+          smart.riskSignals
       },
       aiMode,
       analysisMode,
       analysisModel,
-      usage: limitStatus.usage + 1,
+      apiUsage: {
+        transcription:
+          transcriptionUsage,
+        analysis: analysisUsage,
+        estimatedTotalCostUsd:
+          Number(
+            (
+              (transcriptionUsage
+                ?.estimatedCostUsd || 0) +
+              analysisUsage
+                .estimatedCostUsd
+            ).toFixed(8)
+          )
+      },
+      usage:
+        limitStatus.usage + 1,
       limit: limitStatus.limit,
       remaining: Math.max(
         limitStatus.limit -
@@ -495,7 +824,8 @@ export async function POST(request: Request) {
           1,
         0
       ),
-      plan: limitStatus.subscription.plan
+      plan:
+        limitStatus.subscription.plan
     });
   } catch (error) {
     console.error(
@@ -509,8 +839,12 @@ export async function POST(request: Request) {
         : "Unable to process meeting.";
 
     return NextResponse.json(
-      { error: message },
-      { status: 500 }
+      {
+        error: message
+      },
+      {
+        status: 500
+      }
     );
   }
 }

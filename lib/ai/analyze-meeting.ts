@@ -1,21 +1,31 @@
 import OpenAI from "openai";
 
 import {
+  calculateAnalysisCostUsd,
+  recordOwnerApiUsage,
+  type TokenUsageSummary
+} from "@/lib/owner-api-usage";
+
+import {
   createSmartMeetingResult,
   type SmartMeetingResult
 } from "@/lib/smart-meeting";
 
-export type AIMeetingAnalysis = SmartMeetingResult & {
-  budget: string;
-  timeline: string;
-  decisionMaker: string;
-  requirements: string[];
-  painPoints: string[];
-  objections: string[];
-  closingProbability: number;
-  sentiment: "Positive" | "Neutral" | "Negative";
-  proposalDraft: string;
-};
+export type AIMeetingAnalysis =
+  SmartMeetingResult & {
+    budget: string;
+    timeline: string;
+    decisionMaker: string;
+    requirements: string[];
+    painPoints: string[];
+    objections: string[];
+    closingProbability: number;
+    sentiment:
+      | "Positive"
+      | "Neutral"
+      | "Negative";
+    proposalDraft: string;
+  };
 
 type RawAIAnalysis = {
   summary?: unknown;
@@ -41,6 +51,27 @@ type RawAIAnalysis = {
   closingProbability?: unknown;
   sentiment?: unknown;
   proposalDraft?: unknown;
+};
+
+type AnalysisContext = {
+  userId?: string | null;
+  meetingId?: string | null;
+};
+
+type AnalysisResult = {
+  analysis: AIMeetingAnalysis;
+  mode: "openai" | "fallback";
+  model: string | null;
+  usage: TokenUsageSummary & {
+    estimatedCostUsd: number;
+  };
+  usageRecordId: string | null;
+};
+
+const EMPTY_USAGE: TokenUsageSummary = {
+  inputTokens: 0,
+  outputTokens: 0,
+  totalTokens: 0
 };
 
 function createOpenAIClient() {
@@ -159,6 +190,59 @@ function extractJson(text: string) {
     firstBrace,
     lastBrace + 1
   );
+}
+
+function getUsageNumber(
+  record: Record<string, unknown>,
+  key: string
+) {
+  const value = Number(record[key]);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+
+  return Math.round(value);
+}
+
+function extractResponseUsage(
+  usage: unknown
+): TokenUsageSummary {
+  if (
+    !usage ||
+    typeof usage !== "object" ||
+    Array.isArray(usage)
+  ) {
+    return {
+      ...EMPTY_USAGE
+    };
+  }
+
+  const record =
+    usage as Record<string, unknown>;
+
+  const inputTokens = getUsageNumber(
+    record,
+    "input_tokens"
+  );
+
+  const outputTokens = getUsageNumber(
+    record,
+    "output_tokens"
+  );
+
+  const reportedTotal = getUsageNumber(
+    record,
+    "total_tokens"
+  );
+
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens:
+      reportedTotal ||
+      inputTokens + outputTokens
+  };
 }
 
 function normalizeAnalysis(
@@ -285,12 +369,9 @@ function normalizeAnalysis(
 
 export async function analyzeMeetingWithAI(
   title: string,
-  transcript: string
-): Promise<{
-  analysis: AIMeetingAnalysis;
-  mode: "openai" | "fallback";
-  model: string | null;
-}> {
+  transcript: string,
+  context: AnalysisContext = {}
+): Promise<AnalysisResult> {
   const fallback = createSmartMeetingResult(
     title,
     transcript
@@ -305,17 +386,24 @@ export async function analyzeMeetingWithAI(
       ? transcript.slice(0, 30000)
       : transcript;
 
+  const model =
+    process.env.OPENAI_ANALYSIS_MODEL?.trim() ||
+    "gpt-4.1-mini";
+
+  let usage: TokenUsageSummary = {
+    ...EMPTY_USAGE
+  };
+
+  let estimatedCostUsd = 0;
+
   try {
     const openai = createOpenAIClient();
 
-    const model =
-      process.env.OPENAI_ANALYSIS_MODEL?.trim() ||
-      "gpt-4.1-mini";
+    const response =
+      await openai.responses.create({
+        model,
 
-    const response = await openai.responses.create({
-      model,
-
-      instructions: `
+        instructions: `
 You are the AI sales intelligence engine inside ClientPilot AI by Makzora.
 
 Analyze the meeting transcript accurately.
@@ -362,16 +450,27 @@ Scoring guidance:
 - 0 to 39: weak or unclear opportunity
 
 Use concise, professional business English.
-      `.trim(),
+        `.trim(),
 
-      input: `
+        input: `
 Meeting title:
 ${title}
 
 Meeting transcript:
 ${transcriptForAnalysis}
-      `.trim()
-    });
+        `.trim()
+      });
+
+    usage = extractResponseUsage(
+      response.usage
+    );
+
+    estimatedCostUsd =
+      calculateAnalysisCostUsd({
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens
+      });
 
     const outputText =
       response.output_text?.trim();
@@ -386,19 +485,80 @@ ${transcriptForAnalysis}
       extractJson(outputText)
     ) as RawAIAnalysis;
 
+    const analysis = normalizeAnalysis(
+      parsed,
+      fallback
+    );
+
+    const usageRecordId =
+      await recordOwnerApiUsage({
+        userId: context.userId,
+        meetingId: context.meetingId,
+        service: "responses",
+        operation: "meeting_analysis",
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        estimatedCostUsd,
+        status: "success",
+        metadata: {
+          meeting_title: title,
+          transcript_characters:
+            transcript.length,
+          submitted_characters:
+            transcriptForAnalysis.length,
+          transcript_truncated:
+            transcriptForAnalysis.length !==
+            transcript.length
+        }
+      });
+
     return {
-      analysis: normalizeAnalysis(
-        parsed,
-        fallback
-      ),
+      analysis,
       mode: "openai",
-      model
+      model,
+      usage: {
+        ...usage,
+        estimatedCostUsd
+      },
+      usageRecordId
     };
   } catch (error) {
     console.error(
       "AI meeting analysis failed; using fallback:",
       error
     );
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "Unknown AI analysis error.";
+
+    const usageRecordId =
+      await recordOwnerApiUsage({
+        userId: context.userId,
+        meetingId: context.meetingId,
+        service: "responses",
+        operation: "meeting_analysis",
+        model,
+        inputTokens: usage.inputTokens,
+        outputTokens: usage.outputTokens,
+        totalTokens: usage.totalTokens,
+        estimatedCostUsd,
+        status: "fallback",
+        metadata: {
+          meeting_title: title,
+          transcript_characters:
+            transcript.length,
+          submitted_characters:
+            transcriptForAnalysis.length,
+          transcript_truncated:
+            transcriptForAnalysis.length !==
+            transcript.length,
+          error: errorMessage
+        }
+      });
 
     return {
       analysis: {
@@ -416,7 +576,12 @@ ${transcriptForAnalysis}
           fallback.proposalPoints.join("\n")
       },
       mode: "fallback",
-      model: null
+      model: null,
+      usage: {
+        ...usage,
+        estimatedCostUsd
+      },
+      usageRecordId
     };
   }
 }
