@@ -4,6 +4,10 @@
     {
       "path": "/clientpilotai/api/cron/google-drive-backup",
       "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/clientpilotai/api/cron/monthly-owner-report",
+      "schedule": "15 0 1 * *"
     }
   ]
 }
