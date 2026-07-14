@@ -1,5 +1,6 @@
 "use client";
 import { OwnerExpenseActions } from "@/components/OwnerExpenseActions";
+import { OwnerMonthlyReports } from "@/components/OwnerMonthlyReports";
 import {
   useCallback,
   useEffect,
@@ -1561,7 +1562,11 @@ export function OwnerDashboard({
           </div>
         </section>
       </div>
-
+     <OwnerMonthlyReports
+  selectedMonth={selectedMonth}
+  currentData={data}
+  ownerEmail={ownerEmail}
+/>
       <section className="cp-owner-card cp-owner-ledger">
         <div className="cp-owner-card-head">
           <div>
