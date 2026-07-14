@@ -1,7 +1,16 @@
 import { ReactNode } from "react";
 
-import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { createSupabaseServerClient } from "@/lib/supabase-server";
+import {
+  DashboardHelpButton
+} from "@/components/DashboardHelpButton";
+
+import {
+  DashboardSidebar
+} from "@/components/DashboardSidebar";
+
+import {
+  createSupabaseServerClient
+} from "@/lib/supabase-server";
 
 type DashboardShellProps = {
   children: ReactNode;
@@ -14,20 +23,25 @@ function getOwnerEmails() {
       ""
   )
     .split(",")
-    .map((email) => email.trim().toLowerCase())
+    .map((email) =>
+      email.trim().toLowerCase()
+    )
     .filter(Boolean);
 }
 
 export async function DashboardShell({
   children
 }: DashboardShellProps) {
-  const supabase = await createSupabaseServerClient();
+  const supabase =
+    await createSupabaseServerClient();
 
   const {
     data: { user }
   } = await supabase.auth.getUser();
 
-  const userEmail = String(user?.email || "")
+  const userEmail = String(
+    user?.email || ""
+  )
     .trim()
     .toLowerCase();
 
@@ -44,6 +58,14 @@ export async function DashboardShell({
       />
 
       <main className="main main-premium">
+        {user ? (
+          <div className="cp-dashboard-support-bar">
+            <DashboardHelpButton
+              userEmail={user.email || null}
+            />
+          </div>
+        ) : null}
+
         {children}
       </main>
     </div>
