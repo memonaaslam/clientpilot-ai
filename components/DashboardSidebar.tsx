@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: "D" },
+  { href: "/dashboard/analytics", label: "Analytics", icon: "AN" },
   { href: "/dashboard/clients", label: "Clients", icon: "C" },
   { href: "/dashboard/client-timeline", label: "Client Timeline", icon: "CT" },
   { href: "/dashboard/pipeline", label: "Pipeline", icon: "P" },
@@ -23,7 +24,12 @@ const navItems = [
   { href: "/dashboard/subscription", label: "Subscription", icon: "$" }
 ];
 
-export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isSignedIn?: boolean }) {
+export function DashboardSidebar({
+  userEmail
+}: {
+  userEmail?: string | null;
+  isSignedIn?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -31,6 +37,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
       <div className="sidebar-top">
         <Link href="/dashboard" className="sidebar-brand">
           <span className="sidebar-brand-mark">CP</span>
+
           <span>
             <strong>ClientPilot</strong>
             <small>AI Workspace</small>
@@ -39,6 +46,7 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
 
         <div className="sidebar-workspace-card">
           <span className="workspace-avatar">M</span>
+
           <div>
             <strong>Workspace</strong>
             <small>{userEmail || "memonaaslam00@gmail.com"}</small>
@@ -69,12 +77,19 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
       <div className="sidebar-bottom">
         <div className="sidebar-dev-card">
           <strong>ClientPilot AI</strong>
-          <small className="sidebar-product-line">Smart CRM â€¢ Follow-up Automation â€¢ Proposal Workflow</small>
+
+          <small className="sidebar-product-line">
+            Smart CRM • Follow-up Automation • Proposal Workflow
+          </small>
 
           <div className="sidebar-dev-line" />
 
           <span>Software Developed by</span>
-          <img src="/clientpilotai/makzora-logo-official.png?v=official" alt="Makzora" />
+
+          <img
+            src="/clientpilotai/makzora-logo-official.png?v=official"
+            alt="Makzora"
+          />
 
           <div className="sidebar-legal-links">
             <Link href="/privacy-policy">Privacy</Link>
@@ -87,9 +102,3 @@ export function DashboardSidebar({ userEmail }: { userEmail?: string | null; isS
     </aside>
   );
 }
-
-
-
-
-
-
