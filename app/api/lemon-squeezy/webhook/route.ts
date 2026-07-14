@@ -1,4 +1,4 @@
-import {
+﻿import {
   createHash,
   createHmac,
   timingSafeEqual
@@ -11,6 +11,10 @@ import {
   normalizePlan,
   type PlanId
 } from "@/lib/plans";
+
+import {
+  getPlanFromLemonVariantId
+} from "@/lib/lemon-plan-map";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -142,23 +146,58 @@ function getOptionalPlanFromPayload(
   const attributes =
     payload.data?.attributes ?? {};
 
-  const customPlan = getTextValue(
-    payload.meta?.custom_data?.plan
-  ).toLowerCase();
-
-  if (
-    customPlan === "free" ||
-    customPlan === "starter" ||
-    customPlan === "pro" ||
-    customPlan === "agency"
-  ) {
-    return customPlan;
-  }
-
   const firstOrderItem = getRecord(
     attributes.first_order_item
   );
 
+  const variantId =
+    getTextValue(
+      attributes.variant_id
+    ) ||
+    getTextValue(
+      firstOrderItem.variant_id
+    );
+
+  const variantPlan =
+    getPlanFromLemonVariantId(
+      variantId
+    );
+
+  const customPlan = getTextValue(
+    payload.meta?.custom_data?.plan
+  ).toLowerCase();
+
+  /*
+    Custom checkout data is useful for identifying
+    the local user, but it is not trusted for paid
+    plan entitlements. The signed Lemon variant ID
+    is the primary source of truth.
+  */
+  if (variantPlan) {
+    if (
+      customPlan &&
+      customPlan !== variantPlan
+    ) {
+      console.warn(
+        "Ignored Lemon custom plan mismatch.",
+        {
+          variantId,
+          variantPlan,
+          customPlan
+        }
+      );
+    }
+
+    return variantPlan;
+  }
+
+  /*
+    Some invoice-style events can omit variant_id.
+    Product and variant names are part of the signed
+    Lemon webhook payload, so they are a safe
+    compatibility fallback. Payment events later
+    preserve the existing subscription plan.
+  */
   const productText = [
     attributes.product_name,
     attributes.variant_name,
@@ -171,20 +210,22 @@ function getOptionalPlanFromPayload(
     .join(" ")
     .toLowerCase();
 
-  if (productText.includes("agency")) {
+  if (
+    productText.includes("agency")
+  ) {
     return "agency";
   }
 
-  if (productText.includes("starter")) {
-    return "starter";
-  }
-
-  if (productText.includes("pro")) {
+  if (
+    /\bpro\b/.test(productText)
+  ) {
     return "pro";
   }
 
-  if (productText.includes("free")) {
-    return "free";
+  if (
+    productText.includes("starter")
+  ) {
+    return "starter";
   }
 
   return null;
@@ -921,3 +962,4 @@ export async function POST(
     );
   }
 }
+
