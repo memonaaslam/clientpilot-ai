@@ -19256,3 +19256,258 @@ a {
     width: 100%;
   }
 }
+
+/* =========================================================
+   OWNER SUPPORT INBOX — READABILITY AND ALIGNMENT FIX
+   ========================================================= */
+
+.cp-owner-support-page {
+  width: 100%;
+  max-width: 100%;
+}
+
+.cp-owner-support-hero {
+  align-items: center;
+}
+
+.cp-owner-support-hero > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.cp-owner-support-meta {
+  align-items: center;
+  gap: 12px;
+}
+
+.cp-owner-support-meta span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cp-owner-support-actions {
+  flex-shrink: 0;
+  min-width: 210px;
+}
+
+.cp-owner-support-summary article {
+  min-height: 155px;
+  padding: 24px;
+}
+
+.cp-owner-support-summary span {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.cp-owner-support-summary strong {
+  font-size: 38px;
+}
+
+.cp-owner-support-summary small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cp-owner-support-filter-card,
+.cp-owner-support-table-card {
+  padding: 28px;
+}
+
+.cp-owner-support-table-card
+  .cp-owner-card-head {
+  margin-bottom: 22px;
+}
+
+.cp-owner-support-table-card
+  .cp-owner-card-head h2 {
+  font-size: 25px;
+}
+
+.cp-owner-support-table-card
+  .cp-owner-card-head > strong {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f3efe6;
+  color: #826729;
+  font-size: 12px;
+}
+
+/* Prevent the table from crushing all columns */
+.cp-owner-support-table-card
+  .cp-owner-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  border: 1px solid #e8e3d9;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.cp-owner-support-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.cp-owner-support-table th {
+  padding: 16px 15px;
+  border-bottom: 1px solid #ded8cd;
+  background: #f7f4ee;
+  color: #655f56;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  line-height: 1.4;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cp-owner-support-table td {
+  padding: 19px 15px;
+  border-bottom: 1px solid #eee9e1;
+  color: #3f3b35;
+  font-size: 13px;
+  line-height: 1.55;
+  vertical-align: middle;
+}
+
+.cp-owner-support-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.cp-owner-support-table tbody tr {
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cp-owner-support-table tbody tr:hover {
+  background: #fcfaf5;
+}
+
+.cp-owner-support-table td:first-child {
+  min-width: 260px;
+}
+
+.cp-owner-support-table td:nth-child(2) {
+  min-width: 210px;
+}
+
+.cp-owner-support-table td:nth-child(3) {
+  min-width: 90px;
+}
+
+.cp-owner-support-table td:nth-child(4) {
+  min-width: 155px;
+}
+
+.cp-owner-support-table td:nth-child(5),
+.cp-owner-support-table td:nth-child(6) {
+  min-width: 115px;
+}
+
+.cp-owner-support-table td:nth-child(7) {
+  min-width: 175px;
+  white-space: nowrap;
+}
+
+.cp-owner-support-table td:nth-child(8) {
+  min-width: 120px;
+}
+
+.cp-owner-support-table td > strong {
+  display: block;
+  color: #171717;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.cp-owner-support-table td > small {
+  display: block;
+  max-width: 280px;
+  margin-top: 6px;
+  color: #777067;
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.cp-owner-support-badge {
+  min-height: 32px;
+  padding: 6px 11px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.cp-owner-support-view {
+  min-height: 40px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.cp-owner-support-pagination {
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
+.cp-owner-support-pagination > span {
+  font-size: 13px;
+}
+
+.cp-owner-support-pagination button {
+  min-height: 42px;
+  padding: 0 17px;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .cp-owner-support-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cp-owner-support-actions {
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+  }
+
+  .cp-owner-support-actions a,
+  .cp-owner-support-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .cp-owner-support-filter-card,
+  .cp-owner-support-table-card {
+    padding: 18px;
+  }
+
+  .cp-owner-support-actions {
+    flex-direction: column;
+  }
+
+  .cp-owner-support-table {
+    min-width: 1050px;
+  }
+
+  .cp-owner-support-table th {
+    padding: 14px 12px;
+  }
+
+  .cp-owner-support-table td {
+    padding: 16px 12px;
+  }
+}
