@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type DashboardHelpButtonProps = {
   userEmail?: string | null;
 };
@@ -5,29 +7,15 @@ type DashboardHelpButtonProps = {
 export function DashboardHelpButton({
   userEmail
 }: DashboardHelpButtonProps) {
-  const subject = encodeURIComponent(
-    "ClientPilot AI Support"
-  );
-
-  const body = encodeURIComponent(
-    [
-      "Hello Makzora Team,",
-      "",
-      "I need help with ClientPilot AI.",
-      "",
-      `Account email: ${userEmail || "Not available"}`,
-      "",
-      "My question:"
-    ].join("\n")
-  );
-
-  const emailLink =
-    `mailto:info@makzora.com?subject=${subject}&body=${body}`;
-
   return (
-    <a
+    <Link
       className="cp-dashboard-help-button"
-      href={emailLink}
+      href="/dashboard/support"
+      title={
+        userEmail
+          ? `Support for ${userEmail}`
+          : "Open ClientPilot AI Support"
+      }
     >
       <span className="cp-dashboard-help-icon">
         ?
@@ -35,8 +23,8 @@ export function DashboardHelpButton({
 
       <span>
         <small>Need any help?</small>
-        <strong>Email Makzora</strong>
+        <strong>Open Support Center</strong>
       </span>
-    </a>
+    </Link>
   );
 }

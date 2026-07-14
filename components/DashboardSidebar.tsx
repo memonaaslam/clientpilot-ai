@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -85,6 +85,11 @@ const primaryNavItems = [
     icon: "B"
   },
   {
+    href: "/dashboard/support",
+    label: "Support",
+    icon: "?"
+  },
+  {
     href: "/dashboard/settings",
     label: "Settings",
     icon: "S"
@@ -113,6 +118,11 @@ export function DashboardSidebar({
           href: "/dashboard/owner",
           label: "Owner Dashboard",
           icon: "OD"
+        },
+        {
+          href: "/dashboard/owner/support",
+          label: "Client Issues",
+          icon: "CI"
         },
         ...primaryNavItems.slice(1)
       ]
@@ -168,7 +178,7 @@ export function DashboardSidebar({
               className={`sidebar-nav-item ${
                 isActive ? "active" : ""
               } ${
-                item.href === "/dashboard/owner"
+                item.href.startsWith("/dashboard/owner")
                   ? "sidebar-owner-item"
                   : ""
               }`}

@@ -18330,3 +18330,929 @@ a {
     width: 100%;
   }
 }
+
+/* =========================================================
+   CLIENTPILOT AI CUSTOMER SUPPORT CENTER
+   ========================================================= */
+
+.cp-client-support-page {
+  display: grid;
+  gap: 22px;
+  padding-bottom: 50px;
+}
+
+.cp-client-support-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 34px;
+  border: 1px solid rgba(200, 164, 90, 0.25);
+  border-radius: 26px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(200, 164, 90, 0.2),
+      transparent 36%
+    ),
+    linear-gradient(
+      135deg,
+      #111111,
+      #1d1a15
+    );
+  color: #ffffff;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.14);
+}
+
+.cp-client-support-hero h1 {
+  margin: 10px 0;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.cp-client-support-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.cp-client-support-account {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 22px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cp-client-support-account span {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cp-client-support-account strong {
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.cp-client-support-hero-actions {
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  gap: 10px;
+}
+
+.cp-client-support-hero-actions a,
+.cp-client-support-hero-actions button {
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cp-client-support-hero-actions button {
+  border-color: #c8a45a;
+  background: #c8a45a;
+  color: #111111;
+}
+
+.cp-client-support-hero-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cp-client-support-notice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+}
+
+.cp-client-support-notice > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.cp-client-support-notice p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.cp-client-support-notice > button {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.cp-client-support-notice-success {
+  border: 1px solid #bfe1ca;
+  background: #eefaf2;
+  color: #267344;
+}
+
+.cp-client-support-notice-success > span {
+  background: #267344;
+  color: #ffffff;
+}
+
+.cp-client-support-notice-error {
+  border: 1px solid #efc5c5;
+  background: #fff3f3;
+  color: #9e2929;
+}
+
+.cp-client-support-notice-error > span {
+  background: #a82f2f;
+  color: #ffffff;
+}
+
+.cp-client-support-summary {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.cp-client-support-summary article {
+  min-height: 135px;
+  padding: 21px;
+  border: 1px solid #e7e2d9;
+  border-radius: 19px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cp-client-support-summary span {
+  color: #777167;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cp-client-support-summary strong {
+  color: #111111;
+  font-size: 33px;
+}
+
+.cp-client-support-summary small {
+  color: #999187;
+  font-size: 11px;
+}
+
+.cp-client-support-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.15fr)
+    minmax(0, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.cp-client-support-card {
+  padding: 24px;
+  border: 1px solid #e7e2d9;
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.cp-client-support-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eee9e0;
+}
+
+.cp-client-support-card-head span {
+  color: #9a7c3b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cp-client-support-card-head h2 {
+  margin: 6px 0 0;
+  color: #171717;
+  font-size: 22px;
+}
+
+.cp-client-support-card-head > strong {
+  color: #8b6c2b;
+  font-size: 12px;
+}
+
+.cp-client-support-form {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.cp-client-support-columns {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cp-client-support-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.cp-client-support-form label > span {
+  color: #716b63;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.cp-client-support-form input,
+.cp-client-support-form select,
+.cp-client-support-form textarea {
+  width: 100%;
+  border: 1px solid #ddd7cc;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #171717;
+  font: inherit;
+  outline: none;
+}
+
+.cp-client-support-form input,
+.cp-client-support-form select {
+  min-height: 45px;
+  padding: 0 13px;
+}
+
+.cp-client-support-form textarea {
+  min-height: 155px;
+  padding: 13px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.cp-client-support-form input:focus,
+.cp-client-support-form select:focus,
+.cp-client-support-form textarea:focus {
+  border-color: #c8a45a;
+  box-shadow:
+    0 0 0 3px
+    rgba(200, 164, 90, 0.12);
+}
+
+.cp-client-support-form > button {
+  min-height: 47px;
+  border: 0;
+  border-radius: 12px;
+  background: #111111;
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cp-client-support-form > button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cp-client-support-upload small {
+  color: #948c82;
+  font-size: 10px;
+}
+
+.cp-client-support-selected-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 14px;
+  border: 1px solid #ded5c4;
+  border-radius: 12px;
+  background: #fcf8ef;
+}
+
+.cp-client-support-selected-file > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cp-client-support-selected-file strong {
+  overflow: hidden;
+  color: #292621;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cp-client-support-selected-file small {
+  color: #8c8274;
+  font-size: 10px;
+}
+
+.cp-client-support-selected-file button {
+  border: 0;
+  background: transparent;
+  color: #a43131;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cp-client-support-ticket-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.cp-client-support-ticket {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #e7e2d9;
+  border-radius: 15px;
+  background: #fcfbf9;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.cp-client-support-ticket:hover {
+  transform: translateY(-2px);
+  border-color: rgba(200, 164, 90, 0.6);
+  box-shadow: 0 12px 30px rgba(20, 18, 14, 0.07);
+}
+
+.cp-client-support-ticket-top,
+.cp-client-support-ticket-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.cp-client-support-ticket-top > strong {
+  color: #8b6c2b;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.cp-client-support-ticket h3 {
+  margin: 0;
+  color: #171717;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.cp-client-support-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.cp-client-support-ticket-meta span {
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #f0ede7;
+  color: #716b63;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.cp-client-support-ticket-bottom {
+  padding-top: 9px;
+  border-top: 1px solid #ede9e1;
+}
+
+.cp-client-support-ticket-bottom small {
+  color: #958e84;
+  font-size: 10px;
+}
+
+.cp-client-support-ticket-bottom strong {
+  color: #171717;
+  font-size: 10px;
+}
+
+.cp-client-support-badge {
+  display: inline-flex;
+  min-height: 25px;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.cp-client-support-status-new {
+  background: #fff8dd;
+  color: #80600f;
+}
+
+.cp-client-support-status-open,
+.cp-client-support-status-in_progress {
+  background: #edf5ff;
+  color: #2764a2;
+}
+
+.cp-client-support-status-waiting_for_client {
+  background: #f7efff;
+  color: #7544a4;
+}
+
+.cp-client-support-status-resolved {
+  background: #ecf9f0;
+  color: #287248;
+}
+
+.cp-client-support-status-closed {
+  background: #eeeeee;
+  color: #626262;
+}
+
+.cp-client-support-empty {
+  padding: 55px 20px;
+  color: #898278;
+  text-align: center;
+}
+
+.cp-client-support-empty strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #292621;
+}
+
+.cp-client-support-empty p {
+  max-width: 380px;
+  margin: auto;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+@media (max-width: 1050px) {
+  .cp-client-support-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .cp-client-support-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .cp-client-support-hero {
+    flex-direction: column;
+    padding: 25px;
+  }
+
+  .cp-client-support-hero-actions {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .cp-client-support-summary,
+  .cp-client-support-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-client-support-card {
+    padding: 18px;
+  }
+}
+
+/* =========================================================
+   CLIENT SUPPORT TICKET DETAILS
+   ========================================================= */
+
+.cp-client-ticket-page {
+  display: grid;
+  gap: 22px;
+  padding-bottom: 50px;
+}
+
+.cp-client-ticket-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 32px;
+  border: 1px solid rgba(200, 164, 90, 0.25);
+  border-radius: 26px;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(200, 164, 90, 0.2),
+      transparent 36%
+    ),
+    linear-gradient(
+      135deg,
+      #111111,
+      #1d1a15
+    );
+  color: #ffffff;
+}
+
+.cp-client-ticket-back {
+  display: inline-flex;
+  margin-bottom: 20px;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.cp-client-ticket-hero h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(34px, 5vw, 54px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.cp-client-ticket-hero p {
+  max-width: 700px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.cp-client-ticket-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.cp-client-ticket-hero-meta span {
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 10px;
+}
+
+.cp-client-ticket-status {
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  gap: 10px;
+}
+
+.cp-client-ticket-status
+  .cp-client-support-badge {
+  justify-content: center;
+  min-height: 35px;
+}
+
+.cp-client-ticket-priority {
+  display: flex;
+  min-height: 35px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cp-client-ticket-status button {
+  min-height: 43px;
+  border: 1px solid #c8a45a;
+  border-radius: 11px;
+  background: #c8a45a;
+  color: #111111;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cp-client-ticket-status button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cp-client-ticket-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.6fr)
+    minmax(280px, 0.7fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.cp-client-ticket-main,
+.cp-client-ticket-sidebar {
+  display: grid;
+  gap: 20px;
+}
+
+.cp-client-ticket-conversation {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.cp-client-ticket-message {
+  padding: 19px;
+  border: 1px solid #e5e0d6;
+  border-radius: 17px;
+}
+
+.cp-client-ticket-message-client {
+  margin-right: 34px;
+  background: #f8f7f4;
+}
+
+.cp-client-ticket-message-owner {
+  margin-left: 34px;
+  border-color: rgba(200, 164, 90, 0.42);
+  background: #fbf7ed;
+}
+
+.cp-client-ticket-message-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 13px;
+}
+
+.cp-client-ticket-message-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.cp-client-ticket-message-head strong {
+  color: #171717;
+  font-size: 13px;
+}
+
+.cp-client-ticket-message-head span,
+.cp-client-ticket-message-head time {
+  color: #8d857a;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.cp-client-ticket-message p {
+  margin: 0;
+  color: #4c4944;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cp-client-ticket-attachment,
+.cp-client-ticket-attachment-unavailable {
+  display: inline-flex;
+  margin-top: 14px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: rgba(17, 17, 17, 0.07);
+  color: #3d3933;
+  font-size: 10px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.cp-client-ticket-attachment:hover {
+  background: #111111;
+  color: #ffffff;
+}
+
+.cp-client-ticket-attachment-unavailable {
+  color: #777067;
+}
+
+.cp-client-ticket-reply-form {
+  display: grid;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.cp-client-ticket-reply-form > textarea {
+  width: 100%;
+  min-height: 170px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid #ddd7cc;
+  border-radius: 13px;
+  background: #ffffff;
+  color: #171717;
+  font: inherit;
+  line-height: 1.6;
+  outline: none;
+}
+
+.cp-client-ticket-reply-form
+  > textarea:focus {
+  border-color: #c8a45a;
+  box-shadow:
+    0 0 0 3px
+    rgba(200, 164, 90, 0.12);
+}
+
+.cp-client-ticket-reply-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.cp-client-ticket-reply-footer small {
+  max-width: 430px;
+  color: #8a8379;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.cp-client-ticket-reply-footer button {
+  min-height: 45px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 11px;
+  background: #111111;
+  color: #ffffff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.cp-client-ticket-reply-footer
+  button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cp-client-ticket-details {
+  display: grid;
+  margin-top: 14px;
+}
+
+.cp-client-ticket-details > div {
+  display: grid;
+  gap: 5px;
+  padding: 13px 0;
+  border-bottom: 1px solid #ede9e1;
+}
+
+.cp-client-ticket-details > div:last-child {
+  border-bottom: 0;
+}
+
+.cp-client-ticket-details span {
+  color: #8d857a;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cp-client-ticket-details strong {
+  color: #25221e;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.cp-client-ticket-help-card {
+  border-color: rgba(200, 164, 90, 0.45);
+  background: #fcf8ef;
+}
+
+.cp-client-ticket-help-card > span {
+  color: #977735;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cp-client-ticket-help-card h2 {
+  margin: 8px 0;
+  color: #171717;
+  font-size: 21px;
+}
+
+.cp-client-ticket-help-card p {
+  margin: 0 0 16px;
+  color: #756e64;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.cp-client-ticket-help-card a {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border-radius: 10px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.cp-client-ticket-back-dark {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  padding: 0 15px;
+  border-radius: 10px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+@media (max-width: 1020px) {
+  .cp-client-ticket-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-client-ticket-sidebar {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .cp-client-ticket-hero {
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .cp-client-ticket-status {
+    width: 100%;
+  }
+
+  .cp-client-ticket-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-client-ticket-message-client,
+  .cp-client-ticket-message-owner {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .cp-client-ticket-message-head,
+  .cp-client-ticket-reply-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .cp-client-ticket-reply-footer button {
+    width: 100%;
+  }
+}
