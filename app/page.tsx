@@ -599,7 +599,7 @@ export default function HomePage() {
 
         <div className="cp-makzora-footer-bottom">
           <span>
-            &copy;{String.fromCharCode(169)}{"\u00A9"} 2026 Makzora. All rights reserved.
+            {"\u00A9"} 2026 Makzora. All rights reserved.
           </span>
 
           <span>
