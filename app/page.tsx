@@ -140,11 +140,33 @@ export default function HomePage() {
         </Link>
 
         <nav className="cp-nav-links">
-          <a href="#automation">Automation</a>
-          <a href="#command-center">Command Center</a>
-          <a href="#agency">Agency Mode</a>
-          <a href="#pricing">Pricing</a>
-          <a href="https://www.makzora.com">Makzora</a>
+          <a
+            href="https://www.makzora.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Makzora
+          </a>
+
+          <a href="#automation">
+            Automation
+          </a>
+
+          <a href="#command-center">
+            Command Center
+          </a>
+
+          <a href="#agency">
+            Agency Mode
+          </a>
+
+          <a href="#pricing">
+            Pricing
+          </a>
+
+          <a href="#makzora-footer">
+            Contact
+          </a>
         </nav>
 
         <div className="cp-nav-actions">
@@ -468,7 +490,7 @@ export default function HomePage() {
 
 
       
-      <footer className="cp-makzora-footer">
+      <footer id="makzora-footer" className="cp-makzora-footer">
         <div className="cp-makzora-footer-inner">
           <div className="cp-makzora-footer-brand">
             <img
@@ -577,7 +599,7 @@ export default function HomePage() {
 
         <div className="cp-makzora-footer-bottom">
           <span>
-            &copy;{String.fromCharCode(169)} 2026 Makzora. All rights reserved.
+            &copy;{String.fromCharCode(169)}{"\u00A9"} 2026 Makzora. All rights reserved.
           </span>
 
           <span>

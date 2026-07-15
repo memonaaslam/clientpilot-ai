@@ -23096,3 +23096,49 @@ html {
 }
 
 /* === DASHBOARD OFFICIAL LOGO FIX END === */
+
+/* === DASHBOARD LOGO LARGE FIX START === */
+
+.sidebar-brand-logo-only {
+  width: 100% !important;
+  min-height: 92px !important;
+  height: 92px !important;
+  padding: 0 44px 0 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.sidebar-clientpilot-logo {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 88px !important;
+  object-fit: contain !important;
+  object-position: left center !important;
+
+  /*
+    The uploaded PNG contains large empty margins.
+    Scaling visually removes that empty space.
+  */
+  transform: scale(2.15) !important;
+  transform-origin: left center !important;
+}
+
+@media (max-width: 1023px) {
+  .cp-sidebar-container
+  .sidebar-brand-logo-only {
+    min-height: 88px !important;
+    height: 88px !important;
+    padding-right: 44px !important;
+  }
+
+  .cp-sidebar-container
+  .sidebar-clientpilot-logo {
+    height: 82px !important;
+    transform: scale(2.05) !important;
+  }
+}
+
+/* === DASHBOARD LOGO LARGE FIX END === */
