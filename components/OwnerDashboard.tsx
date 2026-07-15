@@ -1,4 +1,7 @@
 "use client";
+
+import Link from "next/link";
+
 import { OwnerExpenseActions } from "@/components/OwnerExpenseActions";
 import { OwnerMonthlyReports } from "@/components/OwnerMonthlyReports";
 import {
@@ -40,6 +43,16 @@ type PaymentRow = {
   occurred_at: string;
 };
 
+type OwnerAlert = {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  message: string;
+  value?: string;
+  href?: string;
+  actionLabel?: string;
+};
+
 type OwnerDashboardData = {
   month: {
     key: string;
@@ -52,6 +65,10 @@ type OwnerDashboardData = {
     productName: string;
     reportingCurrency: string;
     supportEmail: string;
+    timezone: string;
+    pdfFooter: string;
+    apiWarningPercent: number;
+    annualExpenseAllocation: boolean;
     sellingStartedOn?: string | null;
     usdToPkrRate: number;
     openAiBudgetPkr: number;
@@ -83,6 +100,7 @@ type OwnerDashboardData = {
   costs: {
     monthlyInvestmentsPkr: number;
     monthlyOperatingExpensesPkr: number;
+    monthlyCashOperatingExpensesPkr: number;
     lifetimeInvestmentPkr: number;
     monthlyApiCostUsd: number;
     monthlyApiCostPkr: number;
@@ -104,6 +122,14 @@ type OwnerDashboardData = {
     estimatedCostPkr: number;
     budgetPkr: number;
     remainingBudgetPkr: number;
+  };
+
+  alerts: {
+    total: number;
+    critical: number;
+    warning: number;
+    info: number;
+    items: OwnerAlert[];
   };
 
   recentExpenses: ExpenseRow[];
@@ -253,6 +279,14 @@ export function OwnerDashboard({
 
   const [settingsForm, setSettingsForm] =
     useState({
+      business_name: "",
+      product_name: "",
+      support_email: "",
+      timezone: "Asia/Karachi",
+      pdf_footer:
+        "Software developed by Makzora",
+      api_warning_percent: "80",
+      annual_expense_allocation: true,
       selling_started_on: "",
       usd_to_pkr_rate: "",
       openai_budget_pkr: "",
@@ -292,17 +326,49 @@ export function OwnerDashboard({
         setData(dashboardData);
 
         setSettingsForm({
+          business_name:
+            dashboardData.settings.businessName ||
+            "Makzora",
+
+          product_name:
+            dashboardData.settings.productName ||
+            "ClientPilot AI",
+
+          support_email:
+            dashboardData.settings.supportEmail ||
+            "info@makzora.com",
+
+          timezone:
+            dashboardData.settings.timezone ||
+            "Asia/Karachi",
+
+          pdf_footer:
+            dashboardData.settings.pdfFooter ||
+            "Software developed by Makzora",
+
+          api_warning_percent: String(
+            dashboardData.settings
+              .apiWarningPercent || 80
+          ),
+
+          annual_expense_allocation:
+            dashboardData.settings
+              .annualExpenseAllocation !== false,
+
           selling_started_on:
             dashboardData.settings
               .sellingStartedOn || "",
+
           usd_to_pkr_rate: String(
             dashboardData.settings.usdToPkrRate ||
               ""
           ),
+
           openai_budget_pkr: String(
             dashboardData.settings
               .openAiBudgetPkr || ""
           ),
+
           monthly_revenue_target_pkr: String(
             dashboardData.settings
               .monthlyRevenueTargetPkr || ""
@@ -432,14 +498,41 @@ export function OwnerDashboard({
           },
           body: JSON.stringify({
             action: "settings",
+
+            business_name:
+              settingsForm.business_name.trim(),
+
+            product_name:
+              settingsForm.product_name.trim(),
+
+            support_email:
+              settingsForm.support_email.trim(),
+
+            timezone:
+              settingsForm.timezone,
+
+            pdf_footer:
+              settingsForm.pdf_footer.trim(),
+
+            api_warning_percent: Number(
+              settingsForm.api_warning_percent
+            ),
+
+            annual_expense_allocation:
+              settingsForm
+                .annual_expense_allocation,
+
             selling_started_on:
               settingsForm.selling_started_on,
+
             usd_to_pkr_rate: Number(
               settingsForm.usd_to_pkr_rate
             ),
+
             openai_budget_pkr: Number(
               settingsForm.openai_budget_pkr
             ),
+
             monthly_revenue_target_pkr: Number(
               settingsForm.monthly_revenue_target_pkr
             )
@@ -504,14 +597,18 @@ export function OwnerDashboard({
       pdf.setTextColor(200, 164, 90);
       pdf.setFontSize(10);
       pdf.text(
-        "MAKZORA OWNER REPORT",
+        `${data.settings.businessName.toUpperCase()} OWNER REPORT`,
         15,
         16
       );
 
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(22);
-      pdf.text("ClientPilot AI", 15, 28);
+      pdf.text(
+        data.settings.productName,
+        15,
+        28
+      );
 
       pdf.setFontSize(10);
       pdf.text(
@@ -686,9 +783,23 @@ export function OwnerDashboard({
       );
 
       pdf.text(
-        `Generated ${new Date().toLocaleString()}`,
+        `Generated ${new Date().toLocaleString(
+          "en-PK",
+          {
+            timeZone:
+              data.settings.timezone ||
+              "Asia/Karachi"
+          }
+        )}`,
         15,
         y + 5
+      );
+
+      pdf.text(
+        data.settings.pdfFooter ||
+          "Software developed by Makzora",
+        15,
+        y + 10
       );
 
       pdf.save(
@@ -830,6 +941,81 @@ export function OwnerDashboard({
         </div>
       ) : null}
 
+      <section className="cp-owner-card cp-owner-alert-center">
+        <div className="cp-owner-card-head cp-owner-alert-head">
+          <div>
+            <span>Owner attention center</span>
+            <h2>Business alerts</h2>
+          </div>
+
+          <div className="cp-owner-alert-counts">
+            <span className="critical">
+              {data?.alerts?.critical || 0} critical
+            </span>
+
+            <span className="warning">
+              {data?.alerts?.warning || 0} warning
+            </span>
+
+            <span className="info">
+              {data?.alerts?.info || 0} info
+            </span>
+          </div>
+        </div>
+
+        {!data?.alerts?.items?.length ? (
+          <div className="cp-owner-alert-empty">
+            <span>OK</span>
+
+            <div>
+              <strong>Everything looks healthy</strong>
+
+              <p>
+                There are no active business,
+                payment, support or API alerts.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="cp-owner-alert-grid">
+            {data.alerts.items.map((alert) => (
+              <article
+                className={`cp-owner-alert cp-owner-alert-${alert.severity}`}
+                key={alert.id}
+              >
+                <span className="cp-owner-alert-icon">
+                  {alert.severity === "critical"
+                    ? "!"
+                    : alert.severity === "warning"
+                      ? "!"
+                      : "i"}
+                </span>
+
+                <div className="cp-owner-alert-copy">
+                  <div>
+                    <strong>{alert.title}</strong>
+
+                    {alert.value ? (
+                      <span>{alert.value}</span>
+                    ) : null}
+                  </div>
+
+                  <p>{alert.message}</p>
+
+                  {alert.href &&
+                  alert.actionLabel ? (
+                    <Link href={alert.href}>
+                      {alert.actionLabel}
+                      <span>&gt;</span>
+                    </Link>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="cp-owner-kpi-grid">
         <article className="cp-owner-kpi cp-owner-kpi-dark">
           <span>Net revenue</span>
@@ -958,12 +1144,12 @@ export function OwnerDashboard({
             </div>
 
             <div>
-              <span>Operating expenses</span>
+              <span>Cash operating expenses</span>
               <strong>
                 -{" "}
                 {formatPkr(
                   data?.costs
-                    .monthlyOperatingExpensesPkr
+                    .monthlyCashOperatingExpensesPkr
                 )}
               </strong>
             </div>
@@ -1459,6 +1645,99 @@ export function OwnerDashboard({
             onSubmit={submitSettings}
           >
             <label>
+              <span>Business name</span>
+
+              <input
+                value={
+                  settingsForm.business_name
+                }
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    business_name:
+                      event.target.value
+                  }))
+                }
+                placeholder="Makzora"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Product name</span>
+
+              <input
+                value={
+                  settingsForm.product_name
+                }
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    product_name:
+                      event.target.value
+                  }))
+                }
+                placeholder="ClientPilot AI"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Support email</span>
+
+              <input
+                type="email"
+                value={
+                  settingsForm.support_email
+                }
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    support_email:
+                      event.target.value
+                  }))
+                }
+                placeholder="info@makzora.com"
+                required
+              />
+            </label>
+
+            <label>
+              <span>Business timezone</span>
+
+              <select
+                value={settingsForm.timezone}
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    timezone:
+                      event.target.value
+                  }))
+                }
+              >
+                <option value="Asia/Karachi">
+                  Pakistan — Asia/Karachi
+                </option>
+
+                <option value="Asia/Dubai">
+                  UAE — Asia/Dubai
+                </option>
+
+                <option value="Europe/London">
+                  United Kingdom
+                </option>
+
+                <option value="America/New_York">
+                  North America
+                </option>
+
+                <option value="UTC">
+                  UTC
+                </option>
+              </select>
+            </label>
+
+            <label>
               <span>Start selling date</span>
 
               <input
@@ -1539,6 +1818,83 @@ export function OwnerDashboard({
                 }
               />
             </label>
+
+            <label>
+              <span>
+                API warning threshold (%)
+              </span>
+
+              <input
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                value={
+                  settingsForm
+                    .api_warning_percent
+                }
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    api_warning_percent:
+                      event.target.value
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              <span>Monthly PDF footer</span>
+
+              <textarea
+                value={settingsForm.pdf_footer}
+                onChange={(event) =>
+                  setSettingsForm((current) => ({
+                    ...current,
+                    pdf_footer:
+                      event.target.value
+                  }))
+                }
+                placeholder="Software developed by Makzora"
+                maxLength={160}
+              />
+            </label>
+
+            <div className="cp-owner-setting-toggle">
+              <div>
+                <strong>
+                  Allocate annual expenses monthly
+                </strong>
+
+                <p>
+                  Spread annual recurring expenses
+                  across 12 monthly operating
+                  reports. Cash profit will still
+                  use the actual payment month.
+                </p>
+              </div>
+
+              <label className="cp-owner-switch">
+                <input
+                  type="checkbox"
+                  checked={
+                    settingsForm
+                      .annual_expense_allocation
+                  }
+                  onChange={(event) =>
+                    setSettingsForm(
+                      (current) => ({
+                        ...current,
+                        annual_expense_allocation:
+                          event.target.checked
+                      })
+                    )
+                  }
+                />
+
+                <span />
+              </label>
+            </div>
 
             <button
               type="submit"

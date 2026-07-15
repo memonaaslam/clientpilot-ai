@@ -49,6 +49,7 @@ type SupportResponse = {
   tickets: TicketRow[];
   summary: SupportSummary;
   pagination: Pagination;
+  error?: string;
 };
 
 type Notice = {
@@ -64,7 +65,7 @@ const STATUS_OPTIONS = [
   ["waiting_for_client", "Waiting for client"],
   ["resolved", "Resolved"],
   ["closed", "Closed"]
-];
+] as const;
 
 const PRIORITY_OPTIONS = [
   ["all", "All priorities"],
@@ -72,7 +73,7 @@ const PRIORITY_OPTIONS = [
   ["normal", "Normal"],
   ["high", "High"],
   ["urgent", "Urgent"]
-];
+] as const;
 
 const PLAN_OPTIONS = [
   ["all", "All plans"],
@@ -80,7 +81,7 @@ const PLAN_OPTIONS = [
   ["starter", "Starter"],
   ["pro", "Pro"],
   ["agency", "Agency"]
-];
+] as const;
 
 const CATEGORY_OPTIONS = [
   ["all", "All categories"],
@@ -95,7 +96,7 @@ const CATEGORY_OPTIONS = [
   ["account_issue", "Account"],
   ["feature_request", "Feature request"],
   ["other", "Other"]
-];
+] as const;
 
 function formatLabel(value: string) {
   return String(value || "")
@@ -120,6 +121,21 @@ function formatDate(value?: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(date);
+}
+
+function getInitials(name: string) {
+  const parts = String(name || "Customer")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return (
+    parts
+      .map((part) => part.charAt(0))
+      .join("")
+      .toUpperCase() || "CU"
+  );
 }
 
 export function OwnerSupportInbox({
@@ -222,7 +238,8 @@ export function OwnerSupportInbox({
           }
         );
 
-        const result = await response.json();
+        const result =
+          (await response.json()) as SupportResponse;
 
         if (!response.ok) {
           throw new Error(
@@ -231,15 +248,10 @@ export function OwnerSupportInbox({
           );
         }
 
-        const supportData =
-          result as SupportResponse;
-
-        setTickets(
-          supportData.tickets || []
-        );
+        setTickets(result.tickets || []);
 
         setSummary(
-          supportData.summary || {
+          result.summary || {
             total: 0,
             open: 0,
             urgent: 0,
@@ -249,7 +261,7 @@ export function OwnerSupportInbox({
         );
 
         setPagination(
-          supportData.pagination || {
+          result.pagination || {
             page: requestedPage,
             pageSize: 20,
             total: 0,
@@ -311,36 +323,52 @@ export function OwnerSupportInbox({
   }
 
   return (
-    <div className="cp-owner-support-page">
-      <section className="cp-owner-support-hero">
-        <div>
-          <span className="cp-owner-eyebrow">
+    <main className="mz-support-page">
+      <section className="mz-support-hero">
+        <div className="mz-support-hero-content">
+          <span className="mz-support-eyebrow">
             Makzora Private Support Center
           </span>
 
           <h1>Client Issues</h1>
 
           <p>
-            Review customer questions, payment
-            issues, account problems and urgent
-            support requests from one secure inbox.
+            Manage customer questions, subscription
+            problems, payments and urgent support
+            requests from one secure owner inbox.
           </p>
 
-          <div className="cp-owner-support-meta">
-            <span>Owner: {ownerEmail}</span>
+          <div className="mz-support-owner-row">
+            <span className="mz-support-owner-chip">
+              <span className="mz-support-owner-icon">
+                M
+              </span>
 
-            <span>
-              {summary.total} total tickets
+              <span>
+                <small>Authorized owner</small>
+                <strong>{ownerEmail}</strong>
+              </span>
+            </span>
+
+            <span className="mz-support-total-chip">
+              {summary.total} total{" "}
+              {summary.total === 1
+                ? "ticket"
+                : "tickets"}
             </span>
           </div>
         </div>
 
-        <div className="cp-owner-support-actions">
-          <Link href="/dashboard/owner">
+        <div className="mz-support-hero-actions">
+          <Link
+            className="mz-support-secondary-button"
+            href="/dashboard/owner"
+          >
             Owner Dashboard
           </Link>
 
           <button
+            className="mz-support-primary-button"
             type="button"
             onClick={() =>
               void loadTickets(
@@ -359,11 +387,12 @@ export function OwnerSupportInbox({
 
       {notice ? (
         <div
-          className={`cp-owner-notice cp-owner-notice-${notice.type}`}
+          className={`mz-support-notice mz-support-notice-${notice.type}`}
+          role="alert"
         >
-          <span>
+          <span className="mz-support-notice-icon">
             {notice.type === "success"
-              ? "OK"
+              ? "✓"
               : "!"}
           </span>
 
@@ -379,42 +408,73 @@ export function OwnerSupportInbox({
         </div>
       ) : null}
 
-      <section className="cp-owner-support-summary">
-        <article className="cp-owner-support-summary-dark">
-          <span>Total tickets</span>
+      <section className="mz-support-stat-grid">
+        <article className="mz-support-stat mz-support-stat-dark">
+          <div className="mz-support-stat-top">
+            <span>Total tickets</span>
+            <span className="mz-support-stat-symbol">
+              ALL
+            </span>
+          </div>
+
           <strong>{summary.total}</strong>
-          <small>All customer issues</small>
+          <small>All customer requests</small>
         </article>
 
-        <article>
-          <span>Open issues</span>
+        <article className="mz-support-stat">
+          <div className="mz-support-stat-top">
+            <span>Open issues</span>
+            <span className="mz-support-stat-symbol">
+              OPEN
+            </span>
+          </div>
+
           <strong>{summary.open}</strong>
-          <small>Need owner attention</small>
+          <small>Require owner attention</small>
         </article>
 
-        <article className="cp-owner-support-summary-urgent">
-          <span>Urgent issues</span>
+        <article className="mz-support-stat mz-support-stat-urgent">
+          <div className="mz-support-stat-top">
+            <span>Urgent issues</span>
+            <span className="mz-support-stat-symbol">
+              !
+            </span>
+          </div>
+
           <strong>{summary.urgent}</strong>
-          <small>Highest priority</small>
+          <small>Highest priority requests</small>
         </article>
 
-        <article>
-          <span>Waiting for client</span>
+        <article className="mz-support-stat">
+          <div className="mz-support-stat-top">
+            <span>Waiting for client</span>
+            <span className="mz-support-stat-symbol">
+              WAIT
+            </span>
+          </div>
+
           <strong>
             {summary.waitingForClient}
           </strong>
-          <small>Owner has replied</small>
+
+          <small>Owner response already sent</small>
         </article>
 
-        <article className="cp-owner-support-summary-gold">
-          <span>Resolved</span>
+        <article className="mz-support-stat mz-support-stat-gold">
+          <div className="mz-support-stat-top">
+            <span>Resolved</span>
+            <span className="mz-support-stat-symbol">
+              DONE
+            </span>
+          </div>
+
           <strong>{summary.resolved}</strong>
-          <small>Completed tickets</small>
+          <small>Successfully completed</small>
         </article>
       </section>
 
-      <section className="cp-owner-card cp-owner-support-filter-card">
-        <div className="cp-owner-card-head">
+      <section className="mz-support-panel">
+        <div className="mz-support-panel-heading">
           <div>
             <span>Inbox controls</span>
             <h2>Search and filter issues</h2>
@@ -422,31 +482,38 @@ export function OwnerSupportInbox({
 
           <button
             type="button"
-            className="cp-owner-support-clear"
+            className="mz-support-clear-button"
             onClick={clearFilters}
           >
-            Clear filters
+            Clear all filters
           </button>
         </div>
 
         <form
-          className="cp-owner-support-search"
+          className="mz-support-search-form"
           onSubmit={applySearch}
         >
-          <input
-            value={searchInput}
-            onChange={(event) =>
-              setSearchInput(event.target.value)
-            }
-            placeholder="Search ticket number, client, company, email or subject"
-          />
+          <div className="mz-support-search-field">
+            <span className="mz-support-search-icon">
+              ⌕
+            </span>
+
+            <input
+              value={searchInput}
+              onChange={(event) =>
+                setSearchInput(event.target.value)
+              }
+              placeholder="Search ticket number, client, company, email or subject"
+              aria-label="Search support tickets"
+            />
+          </div>
 
           <button type="submit">
-            Search
+            Search tickets
           </button>
         </form>
 
-        <div className="cp-owner-support-filters">
+        <div className="mz-support-filter-grid">
           <label>
             <span>Status</span>
 
@@ -561,126 +628,173 @@ export function OwnerSupportInbox({
         </div>
       </section>
 
-      <section className="cp-owner-card cp-owner-support-table-card">
-        <div className="cp-owner-card-head">
+      <section className="mz-support-panel mz-support-inbox-panel">
+        <div className="mz-support-panel-heading">
           <div>
             <span>Customer support inbox</span>
             <h2>Submitted issues</h2>
           </div>
 
-          <strong>
-            {pagination.total} results
-          </strong>
+          <div className="mz-support-result-count">
+            {pagination.total}{" "}
+            {pagination.total === 1
+              ? "result"
+              : "results"}
+          </div>
         </div>
 
         {loading ? (
-          <div className="cp-owner-support-loading">
-            Loading support tickets...
+          <div className="mz-support-state">
+            <span className="mz-support-loader" />
+            <strong>Loading support tickets</strong>
+            <p>
+              Please wait while the secure inbox is
+              updated.
+            </p>
           </div>
         ) : !tickets.length ? (
-          <div className="cp-owner-empty">
-            No support tickets match the selected
-            filters.
+          <div className="mz-support-state">
+            <span className="mz-support-empty-icon">
+              0
+            </span>
+
+            <strong>No support tickets found</strong>
+
+            <p>
+              No issues match the selected search
+              and filters.
+            </p>
           </div>
         ) : (
-          <div className="cp-owner-table-wrap">
-            <table className="cp-owner-table cp-owner-support-table">
-              <thead>
-                <tr>
-                  <th>Ticket</th>
-                  <th>Client</th>
-                  <th>Plan</th>
-                  <th>Category</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Updated</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
+          <div className="mz-support-ticket-list">
+            <div className="mz-support-list-header">
+              <span>Ticket</span>
+              <span>Customer</span>
+              <span>Plan</span>
+              <span>Category</span>
+              <span>Priority</span>
+              <span>Status</span>
+              <span>Updated</span>
+              <span>Action</span>
+            </div>
 
-              <tbody>
-                {tickets.map((ticket) => (
-                  <tr key={ticket.id}>
-                    <td>
-                      <strong>
-                        {ticket.ticket_number}
-                      </strong>
+            {tickets.map((ticket) => (
+              <article
+                className="mz-support-ticket-row"
+                key={ticket.id}
+              >
+                <div
+                  className="mz-support-ticket-main"
+                  data-label="Ticket"
+                >
+                  <strong>
+                    {ticket.ticket_number}
+                  </strong>
 
+                  <p>{ticket.subject}</p>
+                </div>
+
+                <div
+                  className="mz-support-customer"
+                  data-label="Customer"
+                >
+                  <span className="mz-support-avatar">
+                    {getInitials(
+                      ticket.customer_name
+                    )}
+                  </span>
+
+                  <span>
+                    <strong>
+                      {ticket.customer_name}
+                    </strong>
+
+                    {ticket.company_name ? (
                       <small>
-                        {ticket.subject}
+                        {ticket.company_name}
                       </small>
-                    </td>
+                    ) : null}
 
-                    <td>
-                      <strong>
-                        {ticket.customer_name}
-                      </strong>
+                    <small>
+                      {ticket.customer_email}
+                    </small>
+                  </span>
+                </div>
 
-                      <small>
-                        {ticket.company_name ||
-                          ticket.customer_email}
-                      </small>
-                    </td>
+                <div
+                  className="mz-support-cell"
+                  data-label="Plan"
+                >
+                  <span
+                    className={`mz-support-badge mz-support-plan-${ticket.plan}`}
+                  >
+                    {formatLabel(ticket.plan)}
+                  </span>
+                </div>
 
-                    <td>
-                      <span
-                        className={`cp-owner-support-badge cp-owner-support-plan-${ticket.plan}`}
-                      >
-                        {formatLabel(ticket.plan)}
-                      </span>
-                    </td>
+                <div
+                  className="mz-support-cell"
+                  data-label="Category"
+                >
+                  <span className="mz-support-category">
+                    {formatLabel(ticket.category)}
+                  </span>
+                </div>
 
-                    <td>
-                      {formatLabel(
-                        ticket.category
-                      )}
-                    </td>
+                <div
+                  className="mz-support-cell"
+                  data-label="Priority"
+                >
+                  <span
+                    className={`mz-support-badge mz-support-priority-${ticket.priority}`}
+                  >
+                    {formatLabel(
+                      ticket.priority
+                    )}
+                  </span>
+                </div>
 
-                    <td>
-                      <span
-                        className={`cp-owner-support-badge cp-owner-support-priority-${ticket.priority}`}
-                      >
-                        {formatLabel(
-                          ticket.priority
-                        )}
-                      </span>
-                    </td>
+                <div
+                  className="mz-support-cell"
+                  data-label="Status"
+                >
+                  <span
+                    className={`mz-support-badge mz-support-status-${ticket.status}`}
+                  >
+                    {formatLabel(ticket.status)}
+                  </span>
+                </div>
 
-                    <td>
-                      <span
-                        className={`cp-owner-support-badge cp-owner-support-status-${ticket.status}`}
-                      >
-                        {formatLabel(
-                          ticket.status
-                        )}
-                      </span>
-                    </td>
+                <div
+                  className="mz-support-date"
+                  data-label="Updated"
+                >
+                  {formatDate(ticket.updated_at)}
+                </div>
 
-                    <td>
-                      {formatDate(
-                        ticket.updated_at
-                      )}
-                    </td>
-
-                    <td>
-                      <Link
-                        className="cp-owner-support-view"
-                        href={`/dashboard/owner/support/${ticket.id}`}
-                      >
-                        Open ticket
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                <div
+                  className="mz-support-action"
+                  data-label="Action"
+                >
+                  <Link
+                    href={`/dashboard/owner/support/${ticket.id}`}
+                  >
+                    Open ticket
+                    <span>→</span>
+                  </Link>
+                </div>
+              </article>
+            ))}
           </div>
         )}
 
-        <div className="cp-owner-support-pagination">
+        <div className="mz-support-pagination">
           <span>
-            Page {pagination.page} of{" "}
-            {pagination.totalPages}
+            Page <strong>{pagination.page}</strong>{" "}
+            of{" "}
+            <strong>
+              {pagination.totalPages}
+            </strong>
           </span>
 
           <div>
@@ -696,7 +810,7 @@ export function OwnerSupportInbox({
                 )
               }
             >
-              Previous
+              ← Previous
             </button>
 
             <button
@@ -712,11 +826,11 @@ export function OwnerSupportInbox({
                 )
               }
             >
-              Next
+              Next →
             </button>
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

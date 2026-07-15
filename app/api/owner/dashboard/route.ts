@@ -18,6 +18,10 @@ type OwnerSettingsRow = {
   product_name: string;
   reporting_currency: string;
   support_email: string;
+  timezone?: string | null;
+  pdf_footer?: string | null;
+  api_warning_percent?: number | string | null;
+  annual_expense_allocation?: boolean | null;
   selling_started_on?: string | null;
   usd_to_pkr_rate: number | string;
   openai_budget_pkr: number | string;
@@ -77,6 +81,26 @@ type ApiUsageRow = {
   estimated_cost_usd?: number | string | null;
   status: string;
   occurred_at: string;
+};
+
+type SupportTicketAlertRow = {
+  id: string;
+  ticket_number: string;
+  subject: string;
+  priority: string;
+  status: string;
+  updated_at: string;
+  created_at: string;
+};
+
+type OwnerAlertItem = {
+  id: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  message: string;
+  value?: string;
+  href?: string;
+  actionLabel?: string;
 };
 
 const EXPENSE_CATEGORIES = [
@@ -358,7 +382,8 @@ export async function GET(request: Request) {
       subscriptionsResult,
       paymentsResult,
       expensesResult,
-      apiUsageResult
+      apiUsageResult,
+      supportTicketsResult
     ] = await Promise.all([
       admin
         .from("owner_settings")
@@ -444,6 +469,15 @@ export async function GET(request: Request) {
         )
         .order("occurred_at", {
           ascending: false
+        }),
+
+      admin
+        .from("support_tickets")
+        .select(
+          "id,ticket_number,subject,priority,status,updated_at,created_at"
+        )
+        .order("updated_at", {
+          ascending: false
         })
     ]);
 
@@ -477,6 +511,12 @@ export async function GET(request: Request) {
       );
     }
 
+    if (supportTicketsResult.error) {
+      throw new Error(
+        `Unable to load support alerts: ${supportTicketsResult.error.message}`
+      );
+    }
+
     const settings =
       (settingsResult.data ?? null) as unknown as
         | OwnerSettingsRow
@@ -504,9 +544,27 @@ export async function GET(request: Request) {
       (apiUsageResult.data ?? []) as unknown as
         ApiUsageRow[];
 
+    const supportTickets =
+      (supportTicketsResult.data ??
+        []) as unknown as SupportTicketAlertRow[];
+
     const usdToPkrRate = toNumber(
       settings.usd_to_pkr_rate
     );
+
+    const apiWarningPercent = Math.min(
+      100,
+      Math.max(
+        1,
+        toNumber(
+          settings.api_warning_percent
+        ) || 80
+      )
+    );
+
+    const annualExpenseAllocation =
+      settings.annual_expense_allocation !==
+      false;
 
     const planCounts = createEmptyPlanCounts();
 
@@ -627,7 +685,8 @@ export async function GET(request: Request) {
     );
 
     let monthlyInvestmentsPkr = 0;
-    let monthlyOperatingExpensesPkr = 0;
+
+    let monthlyCashOperatingExpensesPkr = 0;
 
     for (const expense of monthlyExpenses) {
       const amountPkr = convertAmountToPkr(
@@ -639,7 +698,78 @@ export async function GET(request: Request) {
       if (expense.entry_type === "investment") {
         monthlyInvestmentsPkr += amountPkr;
       } else {
-        monthlyOperatingExpensesPkr += amountPkr;
+        monthlyCashOperatingExpensesPkr +=
+          amountPkr;
+      }
+    }
+
+    let monthlyOperatingExpensesPkr =
+      monthlyCashOperatingExpensesPkr;
+
+    if (annualExpenseAllocation) {
+      monthlyOperatingExpensesPkr = 0;
+
+      const selectedMonthIndex =
+        monthRange.start.getUTCFullYear() * 12 +
+        monthRange.start.getUTCMonth();
+
+      for (const expense of expenses) {
+        if (expense.entry_type !== "expense") {
+          continue;
+        }
+
+        let amountPkr = convertAmountToPkr(
+          toNumber(expense.amount),
+          expense.currency,
+          usdToPkrRate
+        );
+
+        const recurrence = String(
+          expense.recurrence || "one_time"
+        )
+          .trim()
+          .toLowerCase();
+
+        if (recurrence === "annual") {
+          const expenseDate = new Date(
+            `${expense.expense_date}T00:00:00.000Z`
+          );
+
+          if (
+            Number.isNaN(expenseDate.getTime())
+          ) {
+            continue;
+          }
+
+          const expenseMonthIndex =
+            expenseDate.getUTCFullYear() * 12 +
+            expenseDate.getUTCMonth();
+
+          if (
+            selectedMonthIndex <
+            expenseMonthIndex
+          ) {
+            continue;
+          }
+
+          amountPkr = amountPkr / 12;
+
+          monthlyOperatingExpensesPkr +=
+            amountPkr;
+
+          continue;
+        }
+
+        if (
+          dateOnlyIsInsideMonth(
+            expense.expense_date,
+            monthRange.startDate,
+            monthRange.endDateExclusive
+          )
+        ) {
+          monthlyOperatingExpensesPkr +=
+            amountPkr;
+        }
       }
     }
 
@@ -721,6 +851,226 @@ export async function GET(request: Request) {
       monthlyOperatingExpensesPkr -
       monthlyApiCostPkr;
 
+    const openSupportStatuses = new Set([
+      "new",
+      "open",
+      "in_progress"
+    ]);
+
+    const activeSupportTickets =
+      supportTickets.filter((ticket) =>
+        openSupportStatuses.has(
+          String(ticket.status || "")
+            .trim()
+            .toLowerCase()
+        )
+      );
+
+    const urgentSupportCount =
+      activeSupportTickets.filter(
+        (ticket) =>
+          String(ticket.priority || "")
+            .trim()
+            .toLowerCase() === "urgent"
+      ).length;
+
+    const newSupportCount =
+      activeSupportTickets.filter(
+        (ticket) =>
+          String(ticket.status || "")
+            .trim()
+            .toLowerCase() === "new"
+      ).length;
+
+    const overdueSupportCutoff =
+      Date.now() - 48 * 60 * 60 * 1000;
+
+    const overdueSupportCount =
+      activeSupportTickets.filter((ticket) => {
+        const updatedAt = new Date(
+          ticket.updated_at ||
+            ticket.created_at
+        ).getTime();
+
+        return (
+          Number.isFinite(updatedAt) &&
+          updatedAt < overdueSupportCutoff
+        );
+      }).length;
+
+    const failedPaymentCount =
+      monthlyPaymentEvents.filter((event) => {
+        const eventName = String(
+          event.event_name || ""
+        )
+          .trim()
+          .toLowerCase();
+
+        return (
+          eventName.includes("payment_failed") ||
+          eventName.includes("payment_failure") ||
+          eventName.includes("failed")
+        );
+      }).length;
+
+    const cancelledSubscriptionCount =
+      subscriptions.filter((subscription) =>
+        [
+          "cancelled",
+          "canceled",
+          "past_due",
+          "unpaid",
+          "expired"
+        ].includes(
+          String(subscription.status || "")
+            .trim()
+            .toLowerCase()
+        )
+      ).length;
+
+    const apiBudgetUsedPercentage =
+      openAiBudgetPkr > 0
+        ? Math.round(
+            (monthlyApiCostPkr /
+              openAiBudgetPkr) *
+              100
+          )
+        : 0;
+
+    const ownerAlerts: OwnerAlertItem[] = [];
+
+    if (urgentSupportCount > 0) {
+      ownerAlerts.push({
+        id: "urgent-support",
+        severity: "critical",
+        title: `${urgentSupportCount} urgent support ${
+          urgentSupportCount === 1
+            ? "issue"
+            : "issues"
+        }`,
+        message:
+          "Urgent customer requests need immediate owner attention.",
+        value: "Immediate action",
+        href: "/dashboard/owner/support",
+        actionLabel: "Open urgent issues"
+      });
+    }
+
+    if (newSupportCount > 0) {
+      ownerAlerts.push({
+        id: "new-support",
+        severity: "warning",
+        title: `${newSupportCount} new support ${
+          newSupportCount === 1
+            ? "ticket"
+            : "tickets"
+        }`,
+        message:
+          "New customer requests are waiting in the private support inbox.",
+        value: `${newSupportCount} waiting`,
+        href: "/dashboard/owner/support",
+        actionLabel: "Review new tickets"
+      });
+    }
+
+    if (overdueSupportCount > 0) {
+      ownerAlerts.push({
+        id: "overdue-support",
+        severity: "warning",
+        title: `${overdueSupportCount} overdue support ${
+          overdueSupportCount === 1
+            ? "ticket"
+            : "tickets"
+        }`,
+        message:
+          "These open requests have not been updated for more than 48 hours.",
+        value: "Over 48 hours",
+        href: "/dashboard/owner/support",
+        actionLabel: "Review support inbox"
+      });
+    }
+
+    if (failedPaymentCount > 0) {
+      ownerAlerts.push({
+        id: "failed-payments",
+        severity: "critical",
+        title: `${failedPaymentCount} failed ${
+          failedPaymentCount === 1
+            ? "payment"
+            : "payments"
+        }`,
+        message:
+          "Payment failures were recorded during the selected report month.",
+        value: monthRange.key
+      });
+    }
+
+    if (cancelledSubscriptionCount > 0) {
+      ownerAlerts.push({
+        id: "subscription-risk",
+        severity: "warning",
+        title: `${cancelledSubscriptionCount} subscription ${
+          cancelledSubscriptionCount === 1
+            ? "needs"
+            : "need"
+        } review`,
+        message:
+          "Cancelled, past-due, unpaid or expired subscriptions were found.",
+        value: `${cancelledSubscriptionCount} accounts`
+      });
+    }
+
+    if (
+      apiBudgetUsedPercentage >=
+      apiWarningPercent
+    ) {
+      ownerAlerts.push({
+        id: "api-budget",
+        severity:
+          apiBudgetUsedPercentage >= 100
+            ? "critical"
+            : "warning",
+        title:
+          apiBudgetUsedPercentage >= 100
+            ? "OpenAI budget exceeded"
+            : "OpenAI budget running low",
+        message:
+          "Estimated API usage is close to or above the monthly owner budget.",
+        value: `${apiBudgetUsedPercentage}% used`
+      });
+    }
+
+    if (cashProfitPkr < 0) {
+      ownerAlerts.push({
+        id: "negative-profit",
+        severity: "warning",
+        title: "Negative monthly cash profit",
+        message:
+          "Cash outflow is currently higher than net revenue for the selected month.",
+        value: `${Math.abs(
+          Math.round(cashProfitPkr)
+        ).toLocaleString("en-PK")} PKR loss`
+      });
+    }
+
+    const criticalAlertCount =
+      ownerAlerts.filter(
+        (alert) =>
+          alert.severity === "critical"
+      ).length;
+
+    const warningAlertCount =
+      ownerAlerts.filter(
+        (alert) =>
+          alert.severity === "warning"
+      ).length;
+
+    const infoAlertCount =
+      ownerAlerts.filter(
+        (alert) =>
+          alert.severity === "info"
+      ).length;
+
     return NextResponse.json({
       success: true,
 
@@ -737,6 +1087,19 @@ export async function GET(request: Request) {
         reportingCurrency:
           settings.reporting_currency,
         supportEmail: settings.support_email,
+
+        timezone:
+          settings.timezone ||
+          "Asia/Karachi",
+
+        pdfFooter:
+          settings.pdf_footer ||
+          "Software developed by Makzora",
+
+        apiWarningPercent,
+
+        annualExpenseAllocation,
+
         sellingStartedOn:
           settings.selling_started_on || null,
         usdToPkrRate,
@@ -774,12 +1137,13 @@ export async function GET(request: Request) {
       costs: {
         monthlyInvestmentsPkr,
         monthlyOperatingExpensesPkr,
+        monthlyCashOperatingExpensesPkr,
         lifetimeInvestmentPkr,
         monthlyApiCostUsd,
         monthlyApiCostPkr,
         totalMonthlyCashOutflowPkr:
           monthlyInvestmentsPkr +
-          monthlyOperatingExpensesPkr
+          monthlyCashOperatingExpensesPkr
       },
 
       profit: {
@@ -799,6 +1163,14 @@ export async function GET(request: Request) {
         budgetPkr: openAiBudgetPkr,
         remainingBudgetPkr:
           remainingOpenAiBudgetPkr
+      },
+
+      alerts: {
+        total: ownerAlerts.length,
+        critical: criticalAlertCount,
+        warning: warningAlertCount,
+        info: infoAlertCount,
+        items: ownerAlerts
       },
 
       recentExpenses: expenses.slice(0, 20),
@@ -836,6 +1208,122 @@ export async function POST(request: Request) {
       const updatePayload: Record<string, unknown> = {
         updated_at: new Date().toISOString()
       };
+
+      if (typeof body.business_name === "string") {
+        const businessName = String(
+          body.business_name
+        ).trim();
+
+        if (!businessName) {
+          return NextResponse.json(
+            {
+              error: "Business name is required."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.business_name =
+          businessName;
+      }
+
+      if (typeof body.product_name === "string") {
+        const productName = String(
+          body.product_name
+        ).trim();
+
+        if (!productName) {
+          return NextResponse.json(
+            {
+              error: "Product name is required."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.product_name =
+          productName;
+      }
+
+      if (
+        typeof body.support_email === "string"
+      ) {
+        const supportEmail = String(
+          body.support_email
+        )
+          .trim()
+          .toLowerCase();
+
+        if (
+          !supportEmail.includes("@") ||
+          !supportEmail.includes(".")
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Enter a valid support email."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.support_email =
+          supportEmail;
+      }
+
+      if (typeof body.timezone === "string") {
+        const timezone = String(
+          body.timezone
+        ).trim();
+
+        try {
+          new Intl.DateTimeFormat("en-US", {
+            timeZone: timezone
+          }).format(new Date());
+        } catch {
+          return NextResponse.json(
+            {
+              error:
+                "The selected timezone is invalid."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.timezone = timezone;
+      }
+
+      if (
+        typeof body.pdf_footer === "string"
+      ) {
+        const pdfFooter = String(
+          body.pdf_footer
+        ).trim();
+
+        if (pdfFooter.length > 160) {
+          return NextResponse.json(
+            {
+              error:
+                "PDF footer cannot exceed 160 characters."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.pdf_footer =
+          pdfFooter ||
+          "Software developed by Makzora";
+      }
 
       if (
         typeof body.selling_started_on === "string"
@@ -907,6 +1395,42 @@ export async function POST(request: Request) {
 
         updatePayload.monthly_revenue_target_pkr =
           target;
+      }
+
+      if (
+        body.api_warning_percent !== undefined
+      ) {
+        const warningPercent = toNumber(
+          body.api_warning_percent
+        );
+
+        if (
+          warningPercent < 1 ||
+          warningPercent > 100
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "API warning percentage must be between 1 and 100."
+            },
+            {
+              status: 400
+            }
+          );
+        }
+
+        updatePayload.api_warning_percent =
+          warningPercent;
+      }
+
+      if (
+        typeof body
+          .annual_expense_allocation ===
+        "boolean"
+      ) {
+        updatePayload
+          .annual_expense_allocation =
+          body.annual_expense_allocation;
       }
 
       const {
