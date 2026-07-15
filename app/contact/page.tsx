@@ -9,7 +9,7 @@ export default function ContactPage() {
         {
           title: "Support email",
           body: [
-            "Email: memonaaslam00@gmail.com",
+            "Email: info@makzora.com",
             "Please include your account email, plan name, and a clear description of the issue."
           ]
         },

@@ -1,5 +1,13 @@
 import Link from "next/link";
 
+import {
+  LandingFeatureShowcase
+} from "@/components/LandingFeatureShowcase";
+
+import {
+  PLANS
+} from "@/lib/plans";
+
 const automationSteps = [
   {
     title: "Meeting Notes",
@@ -35,98 +43,96 @@ const automationSteps = [
 
 const features = [
   {
-    icon: "MM",
-    title: "Smart Meeting Memory",
-    text: "Turn raw client notes into clean summaries, decisions, and next steps."
+    icon: "TX",
+    title: "AI Audio Transcription",
+    text: "Upload recorded meetings and turn client conversations into searchable transcripts."
   },
   {
-    icon: "AT",
-    title: "Auto Tasks",
-    text: "ClientPilot creates action items so your team does not forget important work."
+    icon: "AI",
+    title: "AI Meeting Summaries",
+    text: "Extract client needs, decisions, objections and clear next steps automatically."
   },
   {
-    icon: "FR",
-    title: "Follow-Up Reminders",
-    text: "Schedule reminders for calls, proposals, payments, and WhatsApp follow-ups."
+    icon: "TK",
+    title: "Automatic Task Extraction",
+    text: "Important actions become organized tasks so nothing is forgotten."
   },
   {
-    icon: "PG",
-    title: "Proposal Generator",
-    text: "Create professional proposal drafts faster instead of starting from zero."
+    icon: "EM",
+    title: "AI Follow-Up Emails",
+    text: "Generate professional follow-up emails based on the real meeting conversation."
   },
   {
-    icon: "SL",
-    title: "Sales Staff Login",
-    text: "Give each sales person a secure Staff ID and PIN workspace."
+    icon: "PR",
+    title: "AI Proposal Generator",
+    text: "Create personalized proposal drafts using the client conversation and requirements."
   },
   {
-    icon: "LR",
-    title: "Lost Lead Rescue",
-    text: "Surface cold leads before they disappear and bring them back into action."
+    icon: "PDF",
+    title: "PDF Proposal Export",
+    text: "Download polished client-ready proposals and share them professionally."
+  },
+  {
+    icon: "CT",
+    title: "Client Timeline",
+    text: "See meetings, tasks, reminders, proposals and follow-ups in one activity history."
+  },
+  {
+    icon: "PL",
+    title: "Smart Pipeline",
+    text: "Track every lead from first conversation through proposal, follow-up and closing."
+  },
+  {
+    icon: "SA",
+    title: "Sales Activity",
+    text: "Monitor clients, meetings, tasks, reminders and proposals created by each sales user."
+  },
+  {
+    icon: "ST",
+    title: "Sales Team Workspace",
+    text: "Create secure Staff ID and PIN accounts with role-based workspace access."
+  },
+  {
+    icon: "SP",
+    title: "Customer Support Center",
+    text: "Clients can submit issues, track status and securely communicate with support."
+  },
+  {
+    icon: "ML",
+    title: "Mobile Workspace",
+    text: "Manage your sales workflow from desktop, tablet or mobile with responsive navigation."
   }
 ];
 
 const pricingPlans = [
   {
-    name: "Free",
+    ...PLANS.free,
     subtitle: "Start testing",
-    price: "$0",
     popular: false,
-    features: [
-      "5 smart meetings/month",
-      "1 owner account",
-      "No sales users",
-      "Basic reminders",
-      "Proposal drafts"
-    ],
     cta: "Start Free"
   },
   {
-    name: "Starter",
+    ...PLANS.starter,
     subtitle: "For solo sellers",
-    price: "$19",
     popular: false,
-    features: [
-      "20 smart meetings/month",
-      "1 owner account",
-      "1 sales user",
-      "Client dashboard",
-      "Follow-up reminders"
-    ],
     cta: "Start Starter"
   },
   {
-    name: "Pro",
+    ...PLANS.pro,
     subtitle: "For growing sales teams",
-    price: "$39",
     popular: true,
-    features: [
-      "80 smart meetings/month",
-      "1 owner account",
-      "2 sales users",
-      "Advanced proposals",
-      "Lost lead rescue"
-    ],
     cta: "Start Pro"
   },
   {
-    name: "Agency",
+    ...PLANS.agency,
     subtitle: "For agencies and teams",
-    price: "$80",
     popular: false,
-    features: [
-      "300 smart meetings/month",
-      "1 owner account",
-      "5 sales users",
-      "Sales activity tracking",
-      "Agency command center"
-    ],
     cta: "Start Agency"
   }
 ];
 export default function HomePage() {
   return (
-    <main className="cp-landing">
+    <main className="cp-landing" id="top">
       <header className="cp-nav">
         <Link href="/" className="cp-brand">
           <span className="cp-brand-mark">CP</span>
@@ -340,10 +346,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      <LandingFeatureShowcase />
+
       <section className="cp-features">
         <div className="cp-section-heading">
-          <span className="cp-pill">Powerful features</span>
-          <h2>Automation your clients can understand instantly.</h2>
+          <span className="cp-pill">12 powerful features</span>
+          <h2>Everything needed to turn conversations into revenue.</h2>
+          <p>
+            One connected workspace for meetings,
+            clients, tasks, follow-ups, proposals,
+            support and sales teams.
+          </p>
         </div>
 
         <div className="cp-feature-grid">
@@ -394,11 +407,17 @@ export default function HomePage() {
           {pricingPlans.map((plan) => (
             <article className={`cp-price-card ${plan.popular ? "popular" : ""}`} key={plan.name}>
               {plan.popular ? <span className="cp-popular">Most Popular</span> : null}
+              <div className="cp-price-feature-badges">
+                <span>AI Transcription</span>
+                <span>AI Follow-ups</span>
+                <span>AI Proposals</span>
+              </div>
+
               <h3>{plan.name}</h3>
               <p>{plan.subtitle}</p>
               <div className="cp-price">
-                <strong>{plan.price}</strong>
-                <span>{plan.name === "Free" ? "" : "/month"}</span>
+                <strong>{plan.priceLabel}</strong>
+                <span></span>
               </div>
 
               <ul>
@@ -407,9 +426,34 @@ export default function HomePage() {
                 ))}
               </ul>
 
-              <Link href="/login" className={plan.popular ? "cp-primary-btn" : "cp-secondary-btn"}>
-                {plan.cta}
-              </Link>
+              <a
+                  href={
+                    plan.name === "Starter"
+                      ? "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/43096221-9517-4b43-8b1c-741fef30d87f"
+                      : plan.name === "Pro"
+                        ? "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/379bf850-dce0-4e3c-a727-71e69ce1cf39"
+                        : plan.name === "Agency"
+                          ? "https://clientpilot-ai.lemonsqueezy.com/checkout/buy/7d490de8-6878-44e1-ae4b-806776fe4a90"
+                          : "/login"
+                  }
+                  className={
+                    plan.popular
+                      ? "cp-primary-btn"
+                      : "cp-secondary-btn"
+                  }
+                  target={
+                    plan.name === "Free"
+                      ? undefined
+                      : "_blank"
+                  }
+                  rel={
+                    plan.name === "Free"
+                      ? undefined
+                      : "noopener noreferrer"
+                  }
+                >
+                  {plan.cta}
+                </a>
             </article>
           ))}
         </div>
@@ -421,6 +465,127 @@ export default function HomePage() {
         <p>Let ClientPilot AI handle the busywork so you can focus on closing deals.</p>
         <Link href="/login" className="cp-primary-btn cp-large-btn">Start Free Today</Link>
       </section>
+
+
+      
+      <footer className="cp-makzora-footer">
+        <div className="cp-makzora-footer-inner">
+          <div className="cp-makzora-footer-brand">
+            <img
+              src="/clientpilotai/makzora-logo-official.png?v=official"
+              alt="Makzora logo"
+              className="cp-makzora-footer-logo-image"
+            />
+
+            <strong>Makzora</strong>
+
+            <p>
+              Build. Brand. Automate. Grow.
+              One digital house for modern businesses.
+            </p>
+          </div>
+
+          <div className="cp-makzora-footer-column">
+            <strong>Company</strong>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Home
+            </a>
+
+            <a
+              href="https://www.makzora.com/#portfolio"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Portfolio
+            </a>
+
+            <a
+              href="#pricing"
+            >
+              Pricing
+            </a>
+
+            <Link href="/contact">
+              Contact
+            </Link>
+          </div>
+
+          <div className="cp-makzora-footer-column">
+            <strong>Services</strong>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Branding &amp; design
+            </a>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              AI agents
+            </a>
+
+            <a
+              href="#top"
+              className="cp-footer-clientpilot-link"
+            >
+              ClientPilot AI
+            </a>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Academy
+            </a>
+          </div>
+
+          <div className="cp-makzora-footer-column">
+            <strong>Get started</strong>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Book a consultation
+            </a>
+
+            <a href="mailto:info@makzora.com">
+              info@makzora.com
+            </a>
+
+            <a
+              href="https://www.makzora.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Join training
+            </a>
+          </div>
+        </div>
+
+        <div className="cp-makzora-footer-bottom">
+          <span>
+            &copy;{String.fromCharCode(169)} 2026 Makzora. All rights reserved.
+          </span>
+
+          <span>
+            Build. Brand. Automate. Grow.
+          </span>
+        </div>
+      </footer>
+
     </main>
   );
 }

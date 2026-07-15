@@ -154,17 +154,15 @@ export function DashboardSidebar({
       <div className="sidebar-top">
         <Link
           href="/dashboard"
-          className="sidebar-brand"
+          className="sidebar-brand sidebar-brand-logo-only"
           onClick={onNavigate}
+          aria-label="ClientPilot AI Dashboard"
         >
-          <span className="sidebar-brand-mark">
-            CP
-          </span>
-
-          <span>
-            <strong>ClientPilot</strong>
-            <small>AI Workspace</small>
-          </span>
+          <img
+            src="/clientpilotai/clientpilot-ai-logo.png"
+            alt="ClientPilot AI"
+            className="sidebar-clientpilot-logo"
+          />
         </Link>
 
         <div className="sidebar-workspace-card">

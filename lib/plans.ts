@@ -15,14 +15,9 @@ export type PlanConfig = {
   monthlyPrice: number;
   meetingsPerMonth: number;
   monthlyMeetingLimit: number;
-
-  // Total users include the owner.
   users: number;
   userLimit: number;
-
-  // Number of sales staff accounts allowed.
   includedSalesUsers: number;
-
   features: string[];
 };
 
@@ -41,13 +36,17 @@ export const PLANS:
       userLimit: 1,
       includedSalesUsers: 0,
       features: [
-        "5 smart meetings per month",
-        "1 owner account",
-        "No sales users",
+        "5 AI meetings per month",
+        "AI audio transcription",
+        "AI meeting summaries",
+        "Automatic task extraction",
         "Client memory CRM",
-        "Smart meeting summaries",
         "Tasks and reminders",
-        "Proposal builder"
+        "AI proposal builder",
+        "PDF proposal export",
+        "Customer Support Center",
+        "1 owner account",
+        "No sales users"
       ]
     },
 
@@ -64,13 +63,15 @@ export const PLANS:
       userLimit: 2,
       includedSalesUsers: 1,
       features: [
-        "20 smart meetings per month",
-        "1 owner account",
+        "Everything in Free",
+        "20 AI meetings per month",
         "1 included sales user",
-        "Client memory CRM",
-        "Proposal builder",
-        "Follow-up reminders",
-        "Google Calendar reminder links"
+        "AI follow-up emails",
+        "Client Timeline",
+        "Follow-up management",
+        "Google Calendar reminder links",
+        "Automatic support emails",
+        "Email support"
       ]
     },
 
@@ -87,14 +88,16 @@ export const PLANS:
       userLimit: 3,
       includedSalesUsers: 2,
       features: [
-        "80 smart meetings per month",
-        "1 owner account",
+        "Everything in Starter",
+        "80 AI meetings per month",
         "2 included sales users",
+        "Sales Activity dashboard",
+        "Smart sales pipeline",
         "Lead scoring",
         "Lost lead rescue",
         "Advanced proposal workflow",
         "Proposal follow-up workflow",
-        "Priority workspace"
+        "Priority support"
       ]
     },
 
@@ -111,13 +114,15 @@ export const PLANS:
       userLimit: 6,
       includedSalesUsers: 5,
       features: [
-        "300 smart meetings per month",
-        "1 owner account",
+        "Everything in Pro",
+        "300 AI meetings per month",
         "5 included sales users",
-        "Owner command center",
-        "Sales team activity tracking",
+        "Sales team management",
+        "Team performance visibility",
         "Agency follow-up command center",
-        "Team performance visibility"
+        "Multi-user collaboration",
+        "Advanced workspace analytics",
+        "Priority support"
       ]
     }
   };
@@ -143,9 +148,7 @@ export function normalizePlan(
 export function getPlanConfig(
   plan?: string | null
 ): PlanConfig {
-  return PLANS[
-    normalizePlan(plan)
-  ];
+  return PLANS[normalizePlan(plan)];
 }
 
 export function getMeetingLimit(
@@ -167,7 +170,5 @@ export function getSalesUserLimit(
 export function getTotalUserLimit(
   plan?: string | null
 ): number {
-  return getPlanConfig(
-    plan
-  ).userLimit;
+  return getPlanConfig(plan).userLimit;
 }
