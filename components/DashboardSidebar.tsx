@@ -103,11 +103,17 @@ const primaryNavItems = [
 
 export function DashboardSidebar({
   userEmail,
-  isOwner = false
+  isOwner = false,
+  mobileOpen = false,
+  onClose,
+  onNavigate
 }: {
   userEmail?: string | null;
   isSignedIn?: boolean;
   isOwner?: boolean;
+  mobileOpen?: boolean;
+  onClose?: () => void;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
 
@@ -129,11 +135,27 @@ export function DashboardSidebar({
     : primaryNavItems;
 
   return (
-    <aside className="dashboard-sidebar">
+    <aside
+      id="clientpilot-dashboard-sidebar"
+      className={`dashboard-sidebar ${
+        mobileOpen ? "mobile-open" : ""
+      }`}
+      aria-label="ClientPilot dashboard navigation"
+    >
+      <button
+        type="button"
+        className="cp-mobile-sidebar-close"
+        onClick={onClose}
+        aria-label="Close dashboard navigation"
+      >
+        ?
+      </button>
+
       <div className="sidebar-top">
         <Link
           href="/dashboard"
           className="sidebar-brand"
+          onClick={onNavigate}
         >
           <span className="sidebar-brand-mark">
             CP
@@ -159,7 +181,7 @@ export function DashboardSidebar({
 
             <small>
               {userEmail ||
-                "memonaaslam00@gmail.com"}
+                "ClientPilot Workspace"}
             </small>
           </div>
         </div>
@@ -175,10 +197,13 @@ export function DashboardSidebar({
           return (
             <Link
               href={item.href}
+              onClick={onNavigate}
               className={`sidebar-nav-item ${
                 isActive ? "active" : ""
               } ${
-                item.href.startsWith("/dashboard/owner")
+                item.href.startsWith(
+                  "/dashboard/owner"
+                )
                   ? "sidebar-owner-item"
                   : ""
               }`}
@@ -196,7 +221,7 @@ export function DashboardSidebar({
           <strong>ClientPilot AI</strong>
 
           <small className="sidebar-product-line">
-            Smart CRM • Follow-up Automation •
+            Smart CRM ? Follow-up Automation ?
             Proposal Workflow
           </small>
 
@@ -210,17 +235,33 @@ export function DashboardSidebar({
           />
 
           <div className="sidebar-legal-links">
-            <Link href="/privacy-policy">
+            <Link
+              href="/privacy-policy"
+              onClick={onNavigate}
+            >
               Privacy
             </Link>
 
-            <Link href="/terms">Terms</Link>
+            <Link
+              href="/terms"
+              onClick={onNavigate}
+            >
+              Terms
+            </Link>
 
-            <Link href="/refund-policy">
+            <Link
+              href="/refund-policy"
+              onClick={onNavigate}
+            >
               Refunds
             </Link>
 
-            <Link href="/contact">Contact</Link>
+            <Link
+              href="/contact"
+              onClick={onNavigate}
+            >
+              Contact
+            </Link>
           </div>
         </div>
       </div>
