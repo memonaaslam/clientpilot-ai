@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 
@@ -777,7 +777,7 @@ export function OwnerSupportInbox({
                   data-label="Action"
                 >
                   <Link
-                    href={`/dashboard/owner/support/${ticket.id}`}
+                    href={`/makzora-owner/products/clientpilot-ai/support/${ticket.id}`}
                   >
                     Open ticket
                     <span>→</span>

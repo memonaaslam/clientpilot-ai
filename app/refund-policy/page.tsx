@@ -17,7 +17,7 @@ export default function RefundPolicyPage() {
           title: "Refund requests",
           body: [
             "Refund requests may be reviewed on a case-by-case basis.",
-            "To request a refund, contact memonaaslam00@gmail.com with your account email, plan name, payment date, and reason for the request."
+            "To request a refund, contact info@makzora.com with your account email, plan name, payment date, and reason for the request."
           ]
         },
         {

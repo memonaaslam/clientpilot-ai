@@ -51,7 +51,7 @@ export default function TermsPage() {
         {
           title: "Contact",
           body: [
-            "For questions about these Terms, contact memonaaslam00@gmail.com."
+            "For questions about these Terms, contact info@makzora.com."
           ]
         }
       ]}

@@ -44,7 +44,7 @@ export default function PrivacyPolicyPage() {
         {
           title: "Contact",
           body: [
-            "For privacy questions, contact us at memonaaslam00@gmail.com."
+            "For privacy questions, contact us at info@makzora.com."
           ]
         }
       ]}

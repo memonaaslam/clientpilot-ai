@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 
@@ -472,7 +472,7 @@ export function OwnerSupportTicket({
 
         <Link
           className="cp-owner-support-back"
-          href="/dashboard/owner/support"
+          href="/makzora-owner/products/clientpilot-ai/support"
         >
           Return to Client Issues
         </Link>
@@ -486,7 +486,7 @@ export function OwnerSupportTicket({
         <div>
           <Link
             className="cp-owner-ticket-back"
-            href="/dashboard/owner/support"
+            href="/makzora-owner/products/clientpilot-ai/support"
           >
             ← Client Issues
           </Link>
