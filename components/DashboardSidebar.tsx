@@ -120,16 +120,8 @@ export function DashboardSidebar({
   const navItems = isOwner
     ? [
         primaryNavItems[0],
-        {
-          href: "/dashboard/owner",
-          label: "Owner Dashboard",
-          icon: "OD"
-        },
-        {
-          href: "/dashboard/owner/support",
-          label: "Client Issues",
-          icon: "CI"
-        },
+        
+        
         ...primaryNavItems.slice(1)
       ]
     : primaryNavItems;
@@ -158,11 +150,10 @@ export function DashboardSidebar({
           onClick={onNavigate}
           aria-label="ClientPilot AI Dashboard"
         >
-          <img
-            src="/clientpilotai/clientpilot-ai-logo.png"
-            alt="ClientPilot AI"
-            className="sidebar-clientpilot-logo"
-          />
+          <div className="sidebar-clientpilot-brand">
+            <span className="sidebar-clientpilot-mark">CP</span>
+            <span className="sidebar-clientpilot-name">ClientPilot AI</span>
+          </div>
         </Link>
 
         <div className="sidebar-workspace-card">
