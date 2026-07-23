@@ -2,132 +2,80 @@
 
 import { useState } from "react";
 
-import type {
-  PlanId
-} from "@/lib/plans";
-
-import {
-  createSupabaseBrowserClient
-} from "@/lib/supabase-browser";
-
-type PaidPlan =
-  Exclude<PlanId, "free">;
-
-const LEMON_CHECKOUT_LINKS:
-  Record<PaidPlan, string | undefined> = {
-    starter:
-      process.env
-        .NEXT_PUBLIC_LEMON_STARTER_CHECKOUT_URL,
-
-    pro:
-      process.env
-        .NEXT_PUBLIC_LEMON_PRO_CHECKOUT_URL,
-
-    agency:
-      process.env
-        .NEXT_PUBLIC_LEMON_AGENCY_CHECKOUT_URL
-  };
-
-function getCheckoutUrl(
-  plan: PaidPlan
-) {
-  const value =
-    LEMON_CHECKOUT_LINKS[plan]?.trim();
-
-  if (!value) {
-    throw new Error(
-      `${plan} checkout URL is not configured.`
-    );
-  }
-
-  const url = new URL(value);
-
-  if (
-    url.protocol !== "https:" ||
-    !url.hostname.endsWith(
-      "lemonsqueezy.com"
-    )
-  ) {
-    throw new Error(
-      `${plan} checkout URL is invalid.`
-    );
-  }
-
-  return url;
-}
+import type { PlanId } from "@/lib/plans";
+import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export function CheckoutButton({
   plan
 }: {
   plan: PlanId;
 }) {
-  const [loading, setLoading] =
-    useState(false);
+  const [loading, setLoading] = useState(false);
 
   async function startCheckout() {
-    if (plan === "free") {
+    if (plan === "free" || loading) {
       return;
     }
 
     setLoading(true);
 
     try {
-      const supabase =
-        createSupabaseBrowserClient();
+      const supabase = createSupabaseBrowserClient();
 
       const {
         data: { user },
-        error
+        error: authError
       } = await supabase.auth.getUser();
 
-      if (error || !user) {
-        alert(
-          "Please log in before subscribing."
-        );
+      if (authError || !user) {
+        alert("Please log in before subscribing.");
 
-        window.location.href =
-          "/clientpilotai/login";
-
+        window.location.href = "/clientpilotai/login";
         return;
       }
 
-      const url =
-        getCheckoutUrl(plan);
-
-      url.searchParams.set(
-        "checkout[custom][user_id]",
-        user.id
+      const response = await fetch(
+        "/clientpilotai/api/safepay/checkout",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            plan
+          })
+        }
       );
 
-      url.searchParams.set(
-        "checkout[custom][plan]",
-        plan
-      );
+      const result = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
 
-      if (user.email) {
-        url.searchParams.set(
-          "checkout[custom][email]",
-          user.email
-        );
-
-        url.searchParams.set(
-          "checkout[email]",
-          user.email
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Unable to create Safepay checkout."
         );
       }
 
-      window.location.href =
-        url.toString();
+      if (
+        !result.url ||
+        !result.url.startsWith("https://")
+      ) {
+        throw new Error(
+          "Safepay returned an invalid checkout URL."
+        );
+      }
+
+      window.location.href = result.url;
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
           : "Unable to open checkout.";
 
-      console.error(
-        "Lemon Squeezy checkout error:",
-        error
-      );
+      console.error("Safepay checkout error:", error);
 
       alert(
         `${message} Please contact info@makzora.com if the problem continues.`
@@ -145,13 +93,11 @@ export function CheckoutButton({
     <button
       className="btn gold"
       type="button"
-      onClick={() =>
-        void startCheckout()
-      }
+      onClick={() => void startCheckout()}
       disabled={loading}
     >
       {loading
-        ? "Opening checkout..."
+        ? "Opening secure checkout..."
         : "Subscribe"}
     </button>
   );
