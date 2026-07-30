@@ -93,11 +93,6 @@ const primaryNavItems = [
     href: "/dashboard/settings",
     label: "Settings",
     icon: "S"
-  },
-  {
-    href: "/dashboard/subscription",
-    label: "Subscription",
-    icon: "$"
   }
 ];
 
